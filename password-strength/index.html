@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Password Strength Checker</title>
+  <style>
+    body {
+      background: #111;
+      color: #fff;
+      font-family: sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding-top: 50px;
+    }
+    input {
+      padding: 10px;
+      width: 300px;
+      font-size: 16px;
+      border-radius: 5px;
+      border: none;
+      margin-bottom: 20px;
+    }
+    .strength {
+      height: 10px;
+      width: 300px;
+      background: #444;
+      border-radius: 5px;
+      overflow: hidden;
+    }
+    .bar {
+      height: 100%;
+      width: 0%;
+      background: red;
+      transition: 0.3s ease;
+    }
+  </style>
+</head>
+<body>
+  <h2>Password Strength Checker</h2>
+  <input type="password" id="password" placeholder="Enter password..." />
+  <div class="strength"><div class="bar" id="bar"></div></div>
+
+  <script>
+    const pass = document.getElementById('password');
+    const bar = document.getElementById('bar');
+
+    pass.addEventListener('input', () => {
+      const val = pass.value;
+      let strength = 0;
+      if (val.length > 5) strength++;
+      if (/[A-Z]/.test(val)) strength++;
+      if (/[0-9]/.test(val)) strength++;
+      if (/[^A-Za-z0-9]/.test(val)) strength++;
+
+      bar.style.width = (strength * 25) + '%';
+      bar.style.background = ['red', 'orange', 'yellow', 'green'][strength - 1] || 'red';
+    });
+  </script>
+</body>
+</html>
