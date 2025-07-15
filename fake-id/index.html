@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Random Profile Generator</title>
+  <style>
+    body {
+      background: #111;
+      color: #fff;
+      font-family: monospace;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 30px;
+    }
+    button {
+      padding: 10px 20px;
+      margin: 10px;
+      border: none;
+      background: #00e676;
+      color: #000;
+      font-weight: bold;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    pre {
+      background: #222;
+      padding: 20px;
+      border-radius: 10px;
+      width: 90%;
+      max-width: 500px;
+      white-space: pre-wrap;
+    }
+  </style>
+</head>
+<body>
+
+  <h2>Random Profile Generator</h2>
+  <button onclick="generate()">Generate Random Profile</button>
+  <pre id="output">Click the button to generate random profile data...</pre>
+
+  <script>
+    const firstNames = [
+      "Aarav", "Vivaan", "Aditya", "Aryan", "Ishaan", "Mohammed", "Sai", "Krish", "Reyansh", "Atharv",
+      "Diya", "Kiara", "Myra", "Aanya", "Pari", "Siya", "Aditi", "Riya", "Avani",
+      "Sameer", "Abhishek", "Ishmeet", "Pratham", "Rahul", "Rohan", "Saurabh", "Ankit", "Deepak", "Vikas",
+      "Pooja", "Neha", "Shruti", "Kavya", "Divya", "Swati", "Ritu", "Meena", "Geeta", "Sunita",
+      "Liam", "Noah", "Oliver", "Elijah", "James", "William", "Benjamin", "Lucas", "Henry", "Alexander",
+      "Olivia", "Emma", "Charlotte", "Amelia", "Ava", "Sophia", "Isabella", "Mia", "Evelyn", "Harper",
+      "Sebastian", "Gabriel", "Jackson", "Ethan", "Daniel", "Matthew", "David", "Joseph", "Samuel", "John",
+      "Grace", "Chloe", "Lily", "Zoe", "Ella", "Scarlett", "Hannah", "Layla", "Aurora", "Victoria"
+    ];
+
+    const lastNames = [
+      "Sharma", "Verma", "Kapoor", "Mehta", "Patel", "Khan", "Reddy", "Singh", "Gupta", "Yadav",
+      "Kumar", "Das", "Jain", "Choudhary", "Garg", "Pillai", "Nair", "Saxena", "Malhotra", "Dubey",
+      "Ahuja", "Bansal", "Chawla", "Dhingra", "Goyal", "Joshi", "Khanna", "Lal", "Mittal", "Narang",
+      "Pant", "Rawat", "Saini", "Tandon", "Uppal", "Vashisht", "Walia", "Xavier", "Yadav", "Zaidi",
+      "Smith", "Jones", "Williams", "Brown", "Davis", "Miller", "Wilson", "Moore", "Taylor", "Anderson",
+      "Thomas", "Jackson", "White", "Harris", "Martin", "Thompson", "Garcia", "Martinez", "Robinson", "Clark",
+      "Lewis", "Lee", "Hall", "Allen", "Young", "Hernandez", "King", "Wright", "Lopez", "Hill"
+    ];
+
+    const countries = [
+      "India", "USA", "UK", "Canada", "Germany", "France", "Australia", "Japan", "Brazil", "South Africa",
+      "Mexico", "Italy", "Spain", "Netherlands", "Sweden", "Norway", "Argentina", "New Zealand", "China", "Russia",
+      "Egypt", "Nigeria", "Kenya", "United Arab Emirates", "Saudi Arabia", "South Korea", "Singapore", "Thailand", "Vietnam"
+    ];
+
+    const cities = [
+      "Mumbai", "Delhi", "Bengaluru", "Hyderabad", "Chennai", "Kolkata", "Pune", "Ahmedabad", "Jaipur", "Lucknow",
+      "New York", "Los Angeles", "Chicago", "Houston", "Phoenix", "London", "Manchester", "Birmingham", "Glasgow", "Liverpool",
+      "Toronto", "Vancouver", "Montreal", "Calgary", "Ottawa", "Berlin", "Munich", "Frankfurt", "Hamburg", "Stuttgart",
+      "Paris", "Marseille", "Lyon", "Toulouse", "Nice", "Sydney", "Melbourne", "Brisbane", "Perth", "Adelaide",
+      "Tokyo", "Osaka", "Kyoto", "Nagoya", "Sapporo", "Rio de Janeiro", "Sao Paulo", "Brasilia", "Salvador", "Fortaleza",
+      "Shanghai", "Beijing", "Guangzhou", "Shenzhen", "Moscow", "Saint Petersburg", "Cairo", "Alexandria", "Dubai", "Abu Dhabi",
+      "Seoul", "Busan", "Singapore City", "Bangkok", "Chiang Mai", "Hanoi", "Ho Chi Minh City", "Rome", "Milan", "Barcelona", "Madrid"
+    ];
+
+    const streetTypes = ["Street", "Road", "Lane", "Avenue", "Boulevard", "Drive", "Way", "Place", "Court", "Terrace", "Close", "Gardens", "Parkway"];
+
+    function getRandom(arr) {
+      return arr[Math.floor(Math.random() * arr.length)];
+    }
+
+    function generate() {
+      const name = `${getRandom(firstNames)} ${getRandom(lastNames)}`;
+      const email = name.toLowerCase().replace(/ /g, '.') + Math.floor(Math.random() * 1000) + "@example.com";
+      const phonePrefix = getRandom(["+91", "+1", "+44", "+61", "+49", "+81", "+86", "+7", "+55", "+27", "+65", "+66", "+84"]); // Added more country prefixes
+      const phoneNumber = phonePrefix + "-" + Math.floor(100000000 + Math.random() * 900000000);
+      
+      const currentYear = new Date().getFullYear();
+      const birthYear = Math.floor(Math.random() * 40) + (currentYear - 60); // Age between ~20 and ~60
+      const dobDay = Math.floor(Math.random() * 28) + 1;
+      const dobMonth = Math.floor(Math.random() * 12) + 1;
+      const dob = `${dobDay < 10 ? '0' + dobDay : dobDay}/${dobMonth < 10 ? '0' + dobMonth : dobMonth}/${birthYear}`;
+      const age = currentYear - birthYear;
+
+      const gender = Math.random() > 0.5 ? "Male" : "Female";
+      
+      const randomCity = getRandom(cities);
+      const randomCountry = getRandom(countries);
+      const address = `${Math.floor(Math.random()*900) + 1} ${getRandom(lastNames)} ${getRandom(streetTypes)}, ${randomCity}, ${randomCountry}`;
+
+      document.getElementById("output").innerText = `
+Name: ${name}
+Age: ${age}
+Email: ${email}
+Phone: ${phoneNumber}
+DOB: ${dob}
+Gender: ${gender}
+Country: ${randomCountry}
+City: ${randomCity}
+Address: ${address}
+      `.trim();
+    }
+  </script>
+</body>
+</html>
