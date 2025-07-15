@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Base64 Encoder/Decoder</title>
+  <style>
+    body {
+      background: #111;
+      color: #fff;
+      font-family: sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 30px;
+    }
+    textarea {
+      width: 90%;
+      max-width: 500px;
+      height: 100px;
+      margin: 10px 0;
+      font-size: 14px;
+      border: none;
+      border-radius: 8px;
+      padding: 10px;
+    }
+    button {
+      margin: 5px;
+      padding: 10px 20px;
+      border: none;
+      background: #00e676;
+      color: #000;
+      font-weight: bold;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <h2>Base64 Encoder / Decoder</h2>
+  <textarea id="input" placeholder="Enter text..."></textarea>
+  <div>
+    <button onclick="encode()">Encode</button>
+    <button onclick="decode()">Decode</button>
+  </div>
+  <textarea id="output" readonly placeholder="Result..."></textarea>
+
+  <script>
+    function encode() {
+      const input = document.getElementById('input').value;
+      document.getElementById('output').value = btoa(input);
+    }
+
+    function decode() {
+      const input = document.getElementById('input').value;
+      try {
+        document.getElementById('output').value = atob(input);
+      } catch {
+        document.getElementById('output').value = 'Invalid Base64 string';
+      }
+    }
+  </script>
+</body>
+</html>
