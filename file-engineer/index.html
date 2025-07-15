@@ -1,0 +1,140 @@
+<!DOCTYPE html><html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>File Engineer - Universal File Converter</title>
+  <style>
+    body {
+      background-color: #111;
+      color: #fff;
+      font-family: sans-serif;
+      text-align: center;
+      padding: 40px;
+    }
+    select, input[type="file"], button {
+      padding: 10px;
+      margin: 10px;
+      border-radius: 5px;
+      border: none;
+      font-size: 16px;
+    }
+    button {
+      background: #00e676;
+      color: #000;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    .container {
+      background: #222;
+      padding: 30px;
+      border-radius: 10px;
+      display: inline-block;
+    }
+    .error {
+      color: red;
+      margin-top: 10px;
+    }
+  </style>
+</head>
+<body>
+  <h1>📁 File Engineer</h1>
+  <p>Convert files easily using JS & free APIs (no login required)</p>  <div class="container">
+    <input type="file" id="fileInput" /><div>
+  <label for="convertTo">Convert To:</label>
+  <select id="convertTo">
+    <option value="pdf">Text → PDF</option>
+    <option value="base64">Image → Base64</option>
+    <option value="text">PDF → Text (via PDF.js)</option>
+    <option value="zip">ZIP → List Files (via JS)</option>
+  </select>
+</div>
+
+<button onclick="handleConvert()">Convert Now</button>
+
+<div id="result" style="margin-top: 20px;"></div>
+<div class="error" id="errorMsg"></div>
+
+  </div>  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>  <script src="https://cdn.jsdelivr.net/npm/fflate@0.8.1/umd/index.js"></script>  <script>
+    function handleConvert() {
+      const file = document.getElementById('fileInput').files[0];
+      const type = document.getElementById('convertTo').value;
+      const result = document.getElementById('result');
+      const errorMsg = document.getElementById('errorMsg');
+      result.innerHTML = '';
+      errorMsg.innerText = '';
+
+      if (!file) return alert("Please choose a file first.");
+
+      try {
+        if (type === "pdf") {
+          const reader = new FileReader();
+          reader.onload = function(e) {
+            import('https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js').then(module => {
+              const { jsPDF } = module;
+              const doc = new jsPDF();
+              doc.text(e.target.result, 10, 10);
+              doc.save("converted.pdf");
+            }).catch(() => {
+              errorMsg.innerText = "❌ Failed to load PDF converter. Please try again.";
+            });
+          };
+          reader.readAsText(file);
+
+        } else if (type === "base64") {
+          const reader = new FileReader();
+          reader.onloadend = function () {
+            const base64 = reader.result;
+            const textarea = document.createElement("textarea");
+            textarea.style.width = "90%";
+            textarea.style.height = "200px";
+            textarea.textContent = base64;
+            result.appendChild(textarea);
+          };
+          reader.readAsDataURL(file);
+
+        } else if (type === "text") {
+          const fileReader = new FileReader();
+          fileReader.onload = function() {
+            const typedarray = new Uint8Array(this.result);
+            pdfjsLib.getDocument({ data: typedarray }).promise.then(pdf => {
+              pdf.getPage(1).then(page => {
+                page.getTextContent().then(content => {
+                  const strings = content.items.map(item => item.str).join(' ');
+                  const pre = document.createElement('pre');
+                  pre.textContent = strings;
+                  result.appendChild(pre);
+                });
+              });
+            }).catch(() => {
+              errorMsg.innerText = "❌ Failed to extract text from PDF.";
+            });
+          };
+          fileReader.readAsArrayBuffer(file);
+
+        } else if (type === "zip") {
+          const reader = new FileReader();
+          reader.onload = function(e) {
+            try {
+              const zipped = new Uint8Array(e.target.result);
+              const files = fflate.unzipSync(zipped);
+              const ul = document.createElement("ul");
+              for (const name in files) {
+                const li = document.createElement("li");
+                li.textContent = name;
+                ul.appendChild(li);
+              }
+              result.appendChild(ul);
+            } catch (err) {
+              errorMsg.innerText = "❌ ZIP extraction failed. File might be corrupted or unsupported.";
+            }
+          };
+          reader.readAsArrayBuffer(file);
+
+        } else {
+          errorMsg.innerText = "❌ Unsupported conversion type.";
+        }
+      } catch (err) {
+        errorMsg.innerText = "❌ Unexpected error occurred during conversion.";
+      }
+    }
+  </script></body>
+</html>
