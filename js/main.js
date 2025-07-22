@@ -1,7 +1,7 @@
 const toolLinks = {
   // 🔗 External tools
   "Bhoot AI": null, // or leave empty if under dev
-  "Ghost Crypt": bhootservices-ghostcrypt.netlify.app,
+  "Ghost Crypt": "bhootservices-ghostcrypt.netlify.app",
 
   // 📁 Internal tools
   "File Engineer": "file-engineer/index.html",
