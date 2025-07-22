@@ -3,152 +3,85 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Base64 Image & Text Tool | Bhoot Services</title>
+  <title>Base64 Encoder / Decoder</title>
   <style>
     body {
-      background: #111;
-      color: #fff;
+      background-color: #0f0f0f;
+      color: white;
       font-family: 'Segoe UI', sans-serif;
-      padding: 30px;
-      text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 30px 10px;
     }
-
-    h2, h3 {
-      color: #00e676;
+    .logo {
+      width: 100px;
+      margin-bottom: 20px;
     }
-
     textarea {
       width: 90%;
-      max-width: 600px;
-      height: 100px;
+      max-width: 500px;
+      height: 120px;
+      padding: 12px;
       margin: 10px 0;
-      font-size: 14px;
-      border: none;
-      border-radius: 8px;
-      padding: 10px;
-      background: #222;
-      color: #fff;
-      resize: vertical;
-    }
-
-    button {
-      margin: 5px;
-      padding: 10px 20px;
-      border: none;
-      background: #00e676;
-      color: #000;
-      font-weight: bold;
-      border-radius: 5px;
-      cursor: pointer;
-      transition: 0.2s ease;
-    }
-
-    button:hover {
-      background: #00c853;
-      transform: scale(1.05);
-    }
-
-    input[type="file"] {
-      margin: 10px 0;
-      color: #fff;
-    }
-
-    img {
-      max-width: 300px;
-      margin-top: 15px;
-      border: 2px solid #00e676;
+      font-size: 16px;
       border-radius: 10px;
+      border: none;
+      resize: none;
+      background-color: #1c1c1c;
+      color: white;
     }
-
-    .section {
-      margin: 40px 0;
-      border-top: 1px solid #333;
-      padding-top: 20px;
+    button {
+      background-color: #00ff88;
+      border: none;
+      padding: 10px 20px;
+      margin: 10px;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: bold;
+      cursor: pointer;
+      transition: background 0.3s ease;
+    }
+    button:hover {
+      background-color: #00dd77;
+    }
+    h1 {
+      margin: 20px 0;
+      font-size: 24px;
     }
   </style>
 </head>
 <body>
 
-  <h2>Base64 Text Encoder / Decoder</h2>
-  <textarea id="input" placeholder="Enter text or Base64..."></textarea>
+  <!-- 🔥 Base64 Embed Image -->
+  <img class="logo" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAMgAAADICAMAAACahl6sAAAAclBMVEUAAP///wAAzv8Azf8Az/8AzP8Azf8AzP8AzP8AzP8AzP8AzP8Azf8AzP8AzP8AzP8AzP8AzP8Azf8AzP8AzP8AzP8AzP8AzP8AzP8AzP8AzP8AzP8AzP8AzP8AzP8AzP8AzP8AzP8AzP8AzP9DwmuRAAAAJHRSTlMAEBAgICQkKioqKysrKy8vLzAwMDQ0NTU1Njs7PDw8Pj5+foGKrJzRAAAAaElEQVR4nO3QMQEAAAgCoNm/9HI0gQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD4L7pAAAGe1vjRAAAAAElFTkSuQmCC" alt="Logo" />
+
+  <h1>Base64 Encoder / Decoder</h1>
+
+  <textarea id="inputText" placeholder="Enter text..."></textarea>
+
   <div>
     <button onclick="encodeText()">Encode</button>
     <button onclick="decodeText()">Decode</button>
-    <button onclick="copyText()">Copy</button>
-  </div>
-  <textarea id="output" readonly placeholder="Result will appear here..."></textarea>
-
-  <div class="section">
-    <h3>🖼️ Encode Image to Base64</h3>
-    <input type="file" id="imageInput" accept="image/*">
-    <textarea id="imageOutput" placeholder="Base64 will appear here..." readonly></textarea>
-    <button onclick="copyImageBase64()">Copy</button>
   </div>
 
-  <div class="section">
-    <h3>📥 Decode Base64 to Image</h3>
-    <textarea id="decodeImageInput" placeholder="Paste Base64 image string here..."></textarea>
-    <button onclick="previewDecodedImage()">Show Image</button>
-    <div id="imagePreview"></div>
-  </div>
+  <textarea id="resultText" placeholder="Result..." readonly></textarea>
 
   <script>
     function encodeText() {
-      const input = document.getElementById('input').value;
-      if (!input.trim()) return alert("⚠️ Enter text to encode.");
-      document.getElementById('output').value = btoa(input);
+      const input = document.getElementById("inputText").value;
+      const encoded = btoa(unescape(encodeURIComponent(input)));
+      document.getElementById("resultText").value = encoded;
     }
 
     function decodeText() {
-      const input = document.getElementById('input').value;
-      if (!input.trim()) return alert("⚠️ Enter Base64 to decode.");
+      const input = document.getElementById("inputText").value;
       try {
-        document.getElementById('output').value = atob(input);
-      } catch {
-        document.getElementById('output').value = '❌ Invalid Base64';
+        const decoded = decodeURIComponent(escape(atob(input)));
+        document.getElementById("resultText").value = decoded;
+      } catch (e) {
+        document.getElementById("resultText").value = "Invalid Base64!";
       }
-    }
-
-    function copyText() {
-      const output = document.getElementById('output');
-      if (!output.value.trim()) return alert("⚠️ Nothing to copy.");
-      output.select();
-      document.execCommand('copy');
-      alert("📋 Copied!");
-    }
-
-    // Image to Base64
-    document.getElementById('imageInput').addEventListener('change', function () {
-      const file = this.files[0];
-      if (!file) return;
-
-      const reader = new FileReader();
-      reader.onload = function () {
-        document.getElementById('imageOutput').value = reader.result;
-      };
-      reader.readAsDataURL(file);
-    });
-
-    function copyImageBase64() {
-      const output = document.getElementById('imageOutput');
-      if (!output.value.trim()) return alert("⚠️ No image Base64 found.");
-      output.select();
-      document.execCommand('copy');
-      alert("🖼️ Image Base64 copied!");
-    }
-
-    // Base64 to Image Preview
-    function previewDecodedImage() {
-      const base64 = document.getElementById('decodeImageInput').value.trim();
-      if (!base64) return alert("⚠️ Paste Base64 to decode.");
-      const img = new Image();
-      img.src = base64;
-      img.onload = () => {
-        const preview = document.getElementById('imagePreview');
-        preview.innerHTML = '';
-        preview.appendChild(img);
-      };
-      img.onerror = () => alert("❌ Invalid or corrupted Base64 image.");
     }
   </script>
 
