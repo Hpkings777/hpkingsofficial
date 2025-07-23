@@ -120,7 +120,7 @@ function getScaledDimensions(originalWidth, originalHeight, maxDimension) {
 function clearImageUI() {
     elements.imgPreview.style.display = 'none';
     elements.imgPreview.src = '';
-    elements.imageOutput.value = '';
+    // elements.imageOutput.value = ''; // DO NOT clear imageOutput here directly
     elements.fileInput.value = '';
     currentEncodedImage = '';
 
@@ -207,6 +207,7 @@ function switchTab(event) {
   document.getElementById(tabName).classList.add('active');
 
   if (tabName !== 'image') {
+    elements.imageOutput.value = ''; // Clear image output explicitly when leaving tab
     clearImageUI();
     closeImageModal();
   }
@@ -247,7 +248,6 @@ function decodeText() {
     console.error("Text decoding error:", e);
   }
 }
-
 /** Handles file input change for image processing. */
 function handleFileInputChange() {
     const file = this.files[0];
@@ -261,33 +261,28 @@ function handleFileInputChange() {
         return;
     }
 
-    // Always clear existing image UI and state before loading a new one
-    clearImageUI();
+    clearImageUI(); // Ensure originalImage is a fresh object
+    elements.imageOutput.value = ''; // Clear output on new file selection
 
     const reader = new FileReader();
     reader.onload = (e) => {
-        // Assign handlers for the *new* originalImage object
         originalImage.onload = () => {
             openImageModal();
 
-            // --- New: Image Size Check and Automatic Adjustment ---
-            let compressionToSet = 0.8; // Default good quality
-            let resolutionToSet = '720'; // Default HD resolution
+            let compressionToSet = 0.8;
+            let resolutionToSet = '720';
 
-            // Get estimated encoded size (approximate for initial check, real size is after canvas processing)
-            // Base64 string is roughly 4/3 the binary size + header overhead.
-            const estimatedBase64Size = e.target.result.length * 0.75; // Roughly convert base64 length to bytes
+            const estimatedBase64Size = e.target.result.length * 0.75;
 
             if (file.size > MAX_FILE_SIZE_BYTES || estimatedBase64Size > MAX_FILE_SIZE_BYTES) {
                 showNotification(
                     `Image size (${(file.size / (1024 * 1024)).toFixed(2)} MB) is greater than 1MB. ` +
                     `Automatically adjusting quality and resolution for better performance.`,
                     'info',
-                    5000 // Longer duration for this important notification
+                    5000
                 );
-                // Reduce quality and resolution for large images
-                resolutionToSet = '360'; // Set to a lower resolution preset
-                compressionToSet = 0.6;   // Set to a lower compression
+                resolutionToSet = '360';
+                compressionToSet = 0.6;
             }
 
             elements.imageQualityPreset.value = resolutionToSet;
@@ -320,7 +315,8 @@ function openImageModal() {
 /** Closes the image settings modal. */
 function closeImageModal() {
     elements.imageModalOverlay.classList.remove('show');
-    clearImageUI();
+    // We don't call clearImageUI here directly if we want the output to remain visible.
+    // Instead, clearImageUI is called in specific success/failure paths.
 }
 
 /** Draws the image preview on the modal canvas, applying scaling based on chosen resolution. */
@@ -422,17 +418,16 @@ function applyImageSettings() {
 
     try {
         currentEncodedImage = tempCanvas.toDataURL('image/jpeg', compressionQualityFinal);
-        elements.imageOutput.value = currentEncodedImage;
+        elements.imageOutput.value = currentEncodedImage; // Set the value FIRST
         elements.imgPreview.src = currentEncodedImage;
         elements.imgPreview.style.display = 'block';
 
-        // --- New: Final Encoded Size Check ---
-        const finalBase64Bytes = currentEncodedImage.length * 0.75; // Approximate byte size of the Base64 data
+        const finalBase64Bytes = currentEncodedImage.length * 0.75;
         if (finalBase64Bytes > MAX_FILE_SIZE_BYTES) {
             showNotification(
                 `Encoded image size (${(finalBase64Bytes / (1024 * 1024)).toFixed(2)} MB) is still large. ` +
                 `Consider a lower resolution or compression for optimal performance.`,
-                'info', // Use info, as it was already processed, just a warning
+                'info',
                 5000
             );
         } else {
@@ -442,9 +437,12 @@ function applyImageSettings() {
     } catch (e) {
         showNotification('Error encoding image. Corrupted data or unsupported format?', 'error');
         console.error("Image encoding failed:", e);
+        elements.imageOutput.value = ''; // Clear output on failure
     } finally {
-        clearImageUI();
-        closeImageModal();
+        // IMPORTANT: Perform cleanup *after* the output is set and notification shown.
+        // We close the modal, then clear the originalImage state, BUT leave the output.
+        closeImageModal(); // This only hides the modal, doesn't clear output
+        clearImageUI(); // This clears originalImage, preview image, and fileInput state, but NOT imageOutput.value
     }
 }
 
@@ -466,12 +464,14 @@ function decodeImageString() {
   if (!base64String) {
     showNotification('Please paste a Base64 image string into the text area to decode.', 'info');
     clearImageUI();
+    elements.imageOutput.value = ''; // Ensure it's clear if input was empty
     return;
   }
 
   if (!base64String.startsWith("data:image/") || base64String.indexOf(';base64,') === -1) {
     showNotification("Invalid Base64 image string. It should start with 'data:image/...' and contain ';base64,'.", 'error');
     clearImageUI();
+    elements.imageOutput.value = ''; // Ensure it's clear on invalid input
     return;
   }
 
@@ -480,14 +480,16 @@ function decodeImageString() {
     elements.imgPreview.src = base64String;
     elements.imgPreview.style.display = 'block';
     showNotification('Image decoded and displayed in preview.', 'success');
-    clearImageUI(); // Clears all image-related state for a clean start
-    elements.imageOutput.value = base64String;
-    elements.imgPreview.src = base64String;
+    // Clear originalImage state but *keep* the output and preview for the decoded string
+    clearImageUI(); // This clears originalImage and fileInput etc.
+    elements.imageOutput.value = base64String; // Re-set the output value after clearImageUI
+    elements.imgPreview.src = base64String; // Re-set the preview src
     elements.imgPreview.style.display = 'block';
   };
   tempImg.onerror = function() {
     showNotification('Failed to decode Base64 string to image. It might be corrupted or malformed.', 'error');
     clearImageUI();
+    elements.imageOutput.value = ''; // Clear output on decode failure
   };
   tempImg.src = base64String;
 }
@@ -510,6 +512,7 @@ function pasteImage() {
           elements.imgPreview.src = text;
           elements.imgPreview.style.display = 'block';
           showNotification('Pasted Base64 image displayed in preview.', 'success');
+          // Clear originalImage state but *keep* the output and preview for the pasted string
           clearImageUI();
           elements.imageOutput.value = text;
           elements.imgPreview.src = text;
@@ -518,11 +521,13 @@ function pasteImage() {
       tempImg.onerror = function() {
           showNotification('Pasted content looks like Base64 but failed to load as an image (corrupted?).', 'error');
           clearImageUI();
+          elements.imageOutput.value = ''; // Clear output on paste failure
       };
       tempImg.src = text;
     } else {
       showNotification("Pasted content is not a valid image Base64 string.", 'error');
       clearImageUI();
+      elements.imageOutput.value = ''; // Clear output if paste isn't valid image Base64
     }
   }).catch(err => {
     showNotification("Clipboard access denied. Please grant permission to read clipboard.", 'error');
