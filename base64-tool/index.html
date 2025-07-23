@@ -293,6 +293,8 @@
       display: flex;
       align-items: center;
       gap: 10px;
+      position: relative; /* For smooth removal */
+      min-height: 40px; /* Prevent collapse during transition */
     }
 
     .notification.show {
@@ -300,10 +302,22 @@
       transform: translateX(0);
     }
 
-    .notification.hide {
-      opacity: 0;
-      transform: translateX(100%);
+    /* Specific classes for animation control */
+    .notification.enter {
+        opacity: 0;
+        transform: translateX(100%);
     }
+
+    .notification.active {
+        opacity: 1;
+        transform: translateX(0);
+    }
+
+    .notification.exit {
+        opacity: 0;
+        transform: translateX(100%);
+    }
+
 
     .notification.success {
       background: #28a745; /* Green */
@@ -319,6 +333,32 @@
 
     .notification-icon {
       font-size: 1.2em; /* Adjust icon size */
+    }
+
+    /* New styles for quality dropdown */
+    .quality-dropdown-container {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        width: 100%;
+        justify-content: center;
+    }
+    .quality-dropdown-container label {
+        margin-right: 5px;
+    }
+    .quality-dropdown-container select {
+        padding: 8px 12px;
+        border-radius: 6px;
+        border: 1px solid #555;
+        background: #333;
+        color: #eee;
+        font-size: 14px;
+        appearance: none; /* Remove default arrow */
+        background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23cccccc%22%20d%3D%22M287%2C114.1L146.2%2C254.9L5.4%2C114.1L5.4%2C114.1l140.8%2C140.8L287%2C114.1L287%2C114.1z%22%2F%3E%3C%2Fsvg%3E'); /* Custom arrow */
+        background-repeat: no-repeat;
+        background-position: right 8px center;
+        background-size: 12px;
+        cursor: pointer;
     }
   </style>
 </head>
@@ -367,11 +407,22 @@
         <canvas id="modalCanvas"></canvas>
       </div>
       <div class="modal-options">
+        <div class="quality-dropdown-container">
+            <label for="imageQualityPreset">Image Quality:</label>
+            <select id="imageQualityPreset" onchange="applyQualityPreset(); drawPreviewImage()">
+                <option value="120">120p (Smallest)</option>
+                <option value="240">240p</option>
+                <option value="360">360p (Low)</option>
+                <option value="480">480p (SD)</option>
+                <option value="720" selected>720p (HD)</option>
+                <option value="1080">1080p (Full HD)</option>
+                <option value="1440">1440p (2K)</option>
+                <option value="2160">2160p (4K)</option>
+                <option value="original">Original Size</option>
+            </select>
+        </div>
         <label>
-            Max Width: <input type="range" id="modalMaxWidthRange" min="100" max="1920" value="800" oninput="updateModalRangeValue('modalMaxWidthRange', 'modalMaxWidthValue'); drawPreviewImage()"> <span id="modalMaxWidthValue">800px</span>
-        </label>
-        <label>
-            Quality: <input type="range" id="modalQualityRange" min="0.1" max="1.0" step="0.1" value="0.8" oninput="updateModalRangeValue('modalQualityRange', 'modalQualityValue', true); drawPreviewImage()"> <span id="modalQualityValue">80%</span>
+            Compression: <input type="range" id="modalCompressionRange" min="0.1" max="1.0" step="0.1" value="0.8" oninput="updateModalRangeValue('modalCompressionRange', 'modalCompressionValue', true); drawPreviewImage()"> <span id="modalCompressionValue">80%</span>
         </label>
       </div>
       <div class="modal-buttons">
@@ -384,17 +435,32 @@
   <div id="notification-container"></div>
 
   <script>
-    // Global variables to store the original image data for modal use
     let originalImage = new Image();
     let modalCanvas = null;
     let modalCtx = null;
     let currentEncodedImage = ''; // Stores the final encoded Base64 for copying
 
+    // Image quality presets map (max height/width for the given "p" quality)
+    // For simplicity, these are max dimensions. A 720p image typically means 1280x720.
+    // We'll scale the larger dimension to match, maintaining aspect ratio.
+    const IMAGE_QUALITY_PRESETS = {
+        '120': 120,
+        '240': 240,
+        '360': 360,
+        '480': 480,
+        '720': 720,
+        '1080': 1080,
+        '1440': 1440,
+        '2160': 2160,
+        'original': null // Special case for original size
+    };
+
     document.addEventListener('DOMContentLoaded', () => {
         modalCanvas = document.getElementById('modalCanvas');
         modalCtx = modalCanvas.getContext('2d');
-        updateModalRangeValue('modalMaxWidthRange', 'modalMaxWidthValue');
-        updateModalRangeValue('modalQualityRange', 'modalQualityValue', true);
+        // Initial setup for the compression range (quality preset handled by applyQualityPreset)
+        updateModalRangeValue('modalCompressionRange', 'modalCompressionValue', true);
+        applyQualityPreset(); // Apply default 720p preset on load
     });
 
     function switchTab(tabName) {
@@ -403,14 +469,13 @@
       document.querySelector(`.tab[onclick="switchTab('${tabName}')"]`).classList.add('active');
       document.getElementById(tabName).classList.add('active');
 
-      // Clear image related fields when switching away from image tab
       if (tabName !== 'image') {
         document.getElementById('imgPreview').style.display = 'none';
         document.getElementById('imgPreview').src = '';
         document.getElementById('imageOutput').value = '';
-        document.getElementById('fileInput').value = ''; // Clear file input
-        currentEncodedImage = ''; // Clear stored base64
-        closeImageModal(); // Close modal if open
+        document.getElementById('fileInput').value = '';
+        currentEncodedImage = '';
+        closeImageModal();
       }
     }
 
@@ -450,16 +515,15 @@
 
     // --- Image Modal and Encoding Logic ---
 
-    // Listener for file input change
     document.getElementById('fileInput').addEventListener('change', function() {
         const file = this.files[0];
         if (!file) {
-            closeImageModal(); // If user cancels file selection
+            closeImageModal();
             return;
         }
         if (!file.type.startsWith('image/')) {
-            showNotification('Please select a valid image file.', 'error');
-            this.value = ''; // Clear the file input
+            showNotification('Please select a valid image file (e.g., JPEG, PNG, GIF).', 'error');
+            this.value = '';
             return;
         }
 
@@ -467,15 +531,14 @@
         reader.onload = function(e) {
             originalImage.onload = function() {
                 openImageModal();
-                // Set initial values for modal sliders (could be remembered from last session or default)
-                document.getElementById('modalMaxWidthRange').value = 800; // Default max width
-                document.getElementById('modalQualityRange').value = 0.8;   // Default quality
-                updateModalRangeValue('modalMaxWidthRange', 'modalMaxWidthValue');
-                updateModalRangeValue('modalQualityRange', 'modalQualityValue', true);
-                drawPreviewImage(); // Draw initial preview
+                // Reset to default preset on new image load, or keep current selection
+                document.getElementById('imageQualityPreset').value = '720'; // Default to 720p
+                document.getElementById('modalCompressionRange').value = 0.8; // Default compression
+                applyQualityPreset(); // This will also call drawPreviewImage()
+                updateModalRangeValue('modalCompressionRange', 'modalCompressionValue', true);
             };
             originalImage.onerror = function() {
-                showNotification('Could not load image. It might be corrupted.', 'error');
+                showNotification('Could not load image. It might be corrupted or an unsupported format.', 'error');
                 closeImageModal();
                 document.getElementById('fileInput').value = '';
             };
@@ -490,77 +553,102 @@
 
     function closeImageModal() {
         document.getElementById('imageModalOverlay').style.display = 'none';
-        // Clear original image source and file input to reset
         originalImage.src = '';
         document.getElementById('fileInput').value = '';
-        modalCtx.clearRect(0, 0, modalCanvas.width, modalCanvas.height); // Clear canvas
+        modalCtx.clearRect(0, 0, modalCanvas.width, modalCanvas.height);
     }
 
-    function drawPreviewImage() {
+    // Applies the selected quality preset to the image sizing.
+    function applyQualityPreset() {
+        const presetValue = document.getElementById('imageQualityPreset').value;
+        // The MAX_DIMENSION will be the value from the preset, or original if 'original'
+        const MAX_DIMENSION_PRESET = IMAGE_QUALITY_PRESETS[presetValue];
+
+        // This function doesn't directly set a slider, but tells drawPreviewImage how to scale
+        drawPreviewImage(MAX_DIMENSION_PRESET);
+    }
+
+
+    function drawPreviewImage(forceMaxDimension = null) {
         if (!originalImage.src || !modalCanvas || !modalCtx) {
             return;
         }
 
-        const MAX_WIDTH = parseInt(document.getElementById('modalMaxWidthRange').value, 10);
-        const QUALITY = parseFloat(document.getElementById('modalQualityRange').value); // Though not used for drawing, good to keep context
+        // Use the passed max dimension from preset, or recalculate if slider changed
+        const currentSelectedPreset = document.getElementById('imageQualityPreset').value;
+        let MAX_DIMENSION = forceMaxDimension !== null ? forceMaxDimension : IMAGE_QUALITY_PRESETS[currentSelectedPreset];
+
+        // If 'original' is selected, use original image dimensions for encoding
+        if (MAX_DIMENSION === null) {
+            MAX_DIMENSION = Math.max(originalImage.width, originalImage.height); // Use the larger dimension
+        }
+
 
         let width = originalImage.width;
         let height = originalImage.height;
 
-        // Calculate new dimensions while maintaining aspect ratio for modal display
-        // Limit max width in modal and also max height to fit screen
+        // Scale based on the MAX_DIMENSION (either from preset or manually calculated)
+        if (MAX_DIMENSION && (width > MAX_DIMENSION || height > MAX_DIMENSION)) {
+            if (width > height) {
+                height *= MAX_DIMENSION / width;
+                width = MAX_DIMENSION;
+            } else {
+                width *= MAX_DIMENSION / height;
+                height = MAX_DIMENSION;
+            }
+        }
+
+        // Ensure modal preview itself doesn't exceed its visual bounds, independent of encoding size
         const MAX_MODAL_DISPLAY_WIDTH = 500;
-        const MAX_MODAL_DISPLAY_HEIGHT = 400; // Visual height limit for preview
+        const MAX_MODAL_DISPLAY_HEIGHT = 400;
+        let displayWidth = width;
+        let displayHeight = height;
 
-        // Scale based on selected max width
-        if (width > MAX_WIDTH) {
-            height *= MAX_WIDTH / width;
-            width = MAX_WIDTH;
+        if (displayWidth > MAX_MODAL_DISPLAY_WIDTH) {
+            displayHeight *= MAX_MODAL_DISPLAY_WIDTH / displayWidth;
+            displayWidth = MAX_MODAL_DISPLAY_WIDTH;
         }
-        // Then scale again if new height exceeds modal display limit
-        if (height > MAX_MODAL_DISPLAY_HEIGHT) {
-            width *= MAX_MODAL_DISPLAY_HEIGHT / height;
-            height = MAX_MODAL_DISPLAY_HEIGHT;
-        }
-        // Finally, scale again if new width exceeds modal display limit (can happen after height scale)
-        if (width > MAX_MODAL_DISPLAY_WIDTH) {
-            height *= MAX_MODAL_DISPLAY_WIDTH / width;
-            width = MAX_MODAL_DISPLAY_WIDTH;
+        if (displayHeight > MAX_MODAL_DISPLAY_HEIGHT) {
+            displayWidth *= MAX_MODAL_DISPLAY_HEIGHT / displayHeight;
+            displayHeight = MAX_MODAL_DISPLAY_HEIGHT;
         }
 
+        modalCanvas.width = displayWidth;
+        modalCanvas.height = displayHeight;
 
-        // Set canvas dimensions
-        modalCanvas.width = width;
-        modalCanvas.height = height;
-
-        // Clear canvas and draw image
         modalCtx.clearRect(0, 0, modalCanvas.width, modalCanvas.height);
-        modalCtx.drawImage(originalImage, 0, 0, width, height);
+        modalCtx.drawImage(originalImage, 0, 0, displayWidth, displayHeight);
     }
 
     function applyImageSettings() {
-        if (!originalImage.src) { // Check originalImage.src rather than canvas
-            showNotification('No image selected or loaded for processing.', 'error');
+        if (!originalImage.src) {
+            showNotification('No image selected for processing.', 'error');
             closeImageModal();
             return;
         }
 
-        const MAX_WIDTH_FINAL = parseInt(document.getElementById('modalMaxWidthRange').value, 10);
-        const QUALITY_FINAL = parseFloat(document.getElementById('modalQualityRange').value);
+        const selectedPreset = document.getElementById('imageQualityPreset').value;
+        let MAX_DIMENSION_FINAL = IMAGE_QUALITY_PRESETS[selectedPreset];
+
+        // If 'original' is selected, use actual image dimensions
+        if (MAX_DIMENSION_FINAL === null) {
+            MAX_DIMENSION_FINAL = Math.max(originalImage.width, originalImage.height);
+        }
+
+        const COMPRESSION_QUALITY_FINAL = parseFloat(document.getElementById('modalCompressionRange').value);
 
         let finalWidth = originalImage.width;
         let finalHeight = originalImage.height;
 
-        // Calculate final dimensions for encoding (can be larger than modal preview)
-        const ABSOLUTE_MAX_HEIGHT_ENCODE = 2000; // Prevent extremely tall outputs
-
-        if (finalWidth > MAX_WIDTH_FINAL) {
-            finalHeight *= MAX_WIDTH_FINAL / finalWidth;
-            finalWidth = MAX_WIDTH_FINAL;
-        }
-        if (finalHeight > ABSOLUTE_MAX_HEIGHT_ENCODE) {
-            finalWidth *= ABSOLUTE_MAX_HEIGHT_ENCODE / finalHeight;
-            finalHeight = ABSOLUTE_MAX_HEIGHT_ENCODE;
+        // Scale based on the chosen preset
+        if (MAX_DIMENSION_FINAL && (finalWidth > MAX_DIMENSION_FINAL || finalHeight > MAX_DIMENSION_FINAL)) {
+            if (finalWidth > finalHeight) {
+                finalHeight *= MAX_DIMENSION_FINAL / finalWidth;
+                finalWidth = MAX_DIMENSION_FINAL;
+            } else {
+                finalWidth *= MAX_DIMENSION_FINAL / finalHeight;
+                finalHeight = MAX_DIMENSION_FINAL;
+            }
         }
 
         // Create a temporary canvas for the final encoding
@@ -570,7 +658,7 @@
         const tempCtx = tempCanvas.getContext('2d');
         tempCtx.drawImage(originalImage, 0, 0, finalWidth, finalHeight);
 
-        const base64String = tempCanvas.toDataURL('image/jpeg', QUALITY_FINAL);
+        const base64String = tempCanvas.toDataURL('image/jpeg', COMPRESSION_QUALITY_FINAL);
 
         currentEncodedImage = base64String;
         document.getElementById('imageOutput').value = base64String;
@@ -581,17 +669,13 @@
         showNotification('Image encoded successfully!', 'success');
     }
 
-    // This button now encodes the content *already present* in the imageOutput textarea
-    // or provides guidance if no image is ready.
     function encodeImageFromCurrentInput() {
         const outputString = document.getElementById('imageOutput').value;
         if (outputString && outputString.startsWith("data:image")) {
             showNotification('Image is already encoded. Use "Choose Image" to re-encode with new settings.', 'info');
         } else if (document.getElementById('fileInput').files.length > 0) {
-            // If a file is chosen but modal not applied yet
             showNotification('Please use "Apply & Encode" in the Image Settings dialog to process the chosen image.', 'info');
-        }
-        else {
+        } else {
             showNotification('No image selected or Base64 string to encode. Choose an image first.', 'info');
         }
     }
@@ -605,7 +689,7 @@
         return;
       }
 
-      // Stricter validation for image Base64 string
+      // Stricter validation for image Base64 string format
       if (!base64String.startsWith("data:image/") || base64String.indexOf(';base64,') === -1) {
         showNotification("Invalid Base64 image string. It should start with 'data:image/...' and contain ';base64,'.", 'error');
         document.getElementById('imgPreview').style.display = 'none';
@@ -620,7 +704,7 @@
         showNotification('Image decoded and displayed in preview.', 'success');
       };
       img.onerror = function() {
-        showNotification('Failed to decode Base64 string to image. It might be corrupted or malformed.', 'error');
+        showNotification('Failed to decode Base64 string to image. It might be corrupted or malformed. Ensure the data part is correct.', 'error');
         document.getElementById('imgPreview').style.display = 'none';
         document.getElementById('imgPreview').src = '';
       };
@@ -629,17 +713,16 @@
 
     function pasteImage() {
       navigator.clipboard.readText().then(text => {
-        text = text.trim(); // Trim whitespace
+        text = text.trim();
         if (!text) {
           showNotification('Clipboard is empty or contains only whitespace.', 'info');
           return;
         }
 
         document.getElementById('imageOutput').value = text;
-        currentEncodedImage = text; // Store for potential copy/decode
+        currentEncodedImage = text;
 
         if (text.startsWith("data:image/") && text.indexOf(';base64,') !== -1) {
-          // Attempt to display immediately, but also confirm it's valid via image object
           const img = new Image();
           img.onload = function() {
               document.getElementById('imgPreview').src = text;
@@ -647,7 +730,7 @@
               showNotification('Pasted Base64 image displayed in preview.', 'success');
           };
           img.onerror = function() {
-              showNotification('Pasted content looks like Base64 but failed to load as an image.', 'error');
+              showNotification('Pasted content looks like Base64 but failed to load as an image (corrupted?).', 'error');
               document.getElementById('imgPreview').style.display = 'none';
               document.getElementById('imgPreview').src = '';
           };
@@ -658,7 +741,7 @@
           document.getElementById('imgPreview').src = '';
         }
       }).catch(err => {
-        showNotification("Clipboard access denied. Please grant permission.", 'error');
+        showNotification("Clipboard access denied. Please grant permission to read clipboard.", 'error');
         console.error("Clipboard paste error:", err);
       });
     }
@@ -677,7 +760,6 @@
           showNotification('Copied to clipboard!', 'success');
         })
         .catch(err => {
-          // Fallback for older browsers or if permission is denied
           textArea.select();
           document.execCommand("copy");
           showNotification('Copied to clipboard (fallback)!', 'info');
@@ -691,74 +773,85 @@
         if (isPercentage) {
             valueSpan.textContent = Math.round(parseFloat(range.value) * 100) + '%';
         } else {
-            valueSpan.textContent = range.value + 'px';
+            // This function is now only for the compression slider, so it's always percentage
+            // The MAX_WIDTH will be driven by the select dropdown
+            valueSpan.textContent = range.value + 'px'; // Keeping for robustness if you add other ranges
         }
     }
 
-    // --- Custom Notification System ---
-    let notificationTimeout;
+    // --- Custom Notification System (More Robust) ---
+    // Use an array to manage multiple notifications or a single, managed instance
+    const notificationQueue = [];
+    let isShowingNotification = false;
 
     function showNotification(message, type = 'info', duration = 3000) {
         const container = document.getElementById('notification-container');
-        let notificationElement = document.querySelector('.notification');
 
-        // If no notification element exists, create one
-        if (!notificationElement) {
-            notificationElement = document.createElement('div');
-            notificationElement.className = 'notification';
-            // Optional: add an icon based on type
-            const iconSpan = document.createElement('span');
-            iconSpan.className = 'notification-icon';
-            notificationElement.appendChild(iconSpan);
-            const messageSpan = document.createElement('span');
-            messageSpan.className = 'notification-message';
-            notificationElement.appendChild(messageSpan);
-            container.appendChild(notificationElement);
+        // Create a new notification element for each call
+        const notificationElement = document.createElement('div');
+        notificationElement.className = 'notification enter'; // Start with enter class for animation
+
+        const iconSpan = document.createElement('span');
+        iconSpan.className = 'notification-icon';
+        const messageSpan = document.createElement('span');
+        messageSpan.className = 'notification-message';
+
+        notificationElement.appendChild(iconSpan);
+        notificationElement.appendChild(messageSpan);
+        container.appendChild(notificationElement);
+
+        notificationQueue.push({ element: notificationElement, message, type, duration });
+
+        processNotificationQueue();
+    }
+
+    function processNotificationQueue() {
+        if (isShowingNotification || notificationQueue.length === 0) {
+            return; // Already showing or nothing to show
         }
 
-        // Clear previous classes and set new ones
-        notificationElement.className = 'notification'; // Reset classes
-        notificationElement.classList.add(type);
-        notificationElement.querySelector('.notification-message').textContent = message;
+        isShowingNotification = true;
+        const currentNotification = notificationQueue.shift(); // Get the next notification from the queue
 
-        // Set icon
-        const iconSpan = notificationElement.querySelector('.notification-icon');
+        const { element, message, type, duration } = currentNotification;
+
+        element.classList.add(type);
+        element.querySelector('.notification-message').textContent = message;
+
+        const iconSpan = element.querySelector('.notification-icon');
         switch (type) {
             case 'success':
-                iconSpan.textContent = '✔️'; // Unicode checkmark
+                iconSpan.textContent = '✔️';
                 break;
             case 'error':
-                iconSpan.textContent = '❌'; // Unicode X mark
+                iconSpan.textContent = '❌';
                 break;
             case 'info':
-                iconSpan.textContent = 'ℹ️'; // Unicode info icon
+                iconSpan.textContent = 'ℹ️';
                 break;
             default:
                 iconSpan.textContent = '';
         }
 
-        // Trigger show animation
-        // Use a small timeout to ensure the browser registers the class removal before adding 'show'
-        // This makes the transition re-run if a new notification comes quickly.
+        // Trigger 'active' class after a short delay to ensure 'enter' transition starts
         setTimeout(() => {
-            notificationElement.classList.add('show');
-        }, 10);
-
-
-        // Clear any existing hide timeout
-        if (notificationTimeout) {
-            clearTimeout(notificationTimeout);
-        }
+            element.classList.remove('enter');
+            element.classList.add('active'); // Start the main 'show' animation
+        }, 50); // Small delay to ensure CSS transition gets applied
 
         // Set timeout to hide the notification
-        notificationTimeout = setTimeout(() => {
-            notificationElement.classList.remove('show');
-            notificationElement.classList.add('hide'); // Add hide class for exit animation
+        setTimeout(() => {
+            element.classList.remove('active');
+            element.classList.add('exit'); // Start the 'hide' animation
+
             // Remove element after transition completes
-            notificationElement.addEventListener('transitionend', function handler() {
-                if (!notificationElement.classList.contains('show')) { // Only remove if actually hidden
-                    notificationElement.remove();
-                    notificationElement.removeEventListener('transitionend', handler);
+            element.addEventListener('transitionend', function handler() {
+                // Ensure it's the 'exit' transition ending before removal
+                if (element.classList.contains('exit')) {
+                    element.remove();
+                    element.removeEventListener('transitionend', handler);
+                    isShowingNotification = false; // Allow next notification to show
+                    processNotificationQueue(); // Process next in queue
                 }
             });
         }, duration);
