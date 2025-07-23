@@ -5,13 +5,20 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Base64 Encoder/Decoder</title>
   <style>
-    body {
-      background: #111;
-      color: #fff;
-      font-family: 'Segoe UI', sans-serif;
+    * {
       margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #0f0f0f;
+      color: #fff;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
       padding: 20px;
-      text-align: center;
     }
 
     h1 {
@@ -20,17 +27,15 @@
 
     .tabs {
       display: flex;
-      justify-content: center;
       margin: 20px 0;
+      gap: 10px;
     }
 
     .tab {
       padding: 10px 20px;
-      margin: 0 5px;
-      cursor: pointer;
-      border: 1px solid #555;
       background: #222;
       border-radius: 5px;
+      cursor: pointer;
       transition: 0.3s;
     }
 
@@ -40,58 +45,85 @@
       font-weight: bold;
     }
 
-    .section {
-      display: none;
+    .container {
+      width: 100%;
+      max-width: 600px;
     }
 
-    .section.active {
-      display: block;
+    .panel {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+      position: relative;
+    }
+
+    .panel.active {
+      display: flex;
     }
 
     textarea {
-      width: 90%;
-      max-width: 500px;
+      width: 100%;
       height: 100px;
-      margin: 10px 0;
-      font-size: 14px;
-      border: none;
-      border-radius: 8px;
+      border-radius: 6px;
       padding: 10px;
+      font-size: 14px;
+      resize: vertical;
     }
 
     button {
-      margin: 5px;
       padding: 10px 20px;
       border: none;
       background: #00e676;
       color: #000;
       font-weight: bold;
-      border-radius: 5px;
+      border-radius: 6px;
       cursor: pointer;
-    }
-
-    #image-preview {
-      margin-top: 15px;
-      max-width: 100%;
+      margin: 5px;
     }
 
     input[type="file"] {
       display: none;
     }
 
-    .custom-file-label {
-      background: #444;
-      color: #fff;
+    label.custom-file {
+      background: #00e676;
+      color: #000;
+      font-weight: bold;
       padding: 10px 20px;
-      border-radius: 5px;
-      display: inline-block;
+      border-radius: 6px;
       cursor: pointer;
-      margin-top: 10px;
+      margin: 5px;
     }
 
-    .result-img {
-      max-width: 90%;
-      margin-top: 15px;
+    img.preview {
+      max-width: 100%;
+      max-height: 300px;
+      border-radius: 8px;
+    }
+
+    .output {
+      word-break: break-all;
+    }
+
+    .copy-btn, .paste-btn {
+      position: absolute;
+      bottom: 10px;
+      padding: 6px 10px;
+      font-size: 12px;
+      border-radius: 6px;
+      background: #00e676;
+      color: #000;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    .copy-btn {
+      right: 10px;
+    }
+
+    .paste-btn {
+      left: 10px;
     }
   </style>
 </head>
@@ -103,68 +135,90 @@
     <div class="tab" onclick="switchTab('image')">Image</div>
   </div>
 
-  <!-- Text Encoding/Decoding -->
-  <div id="text" class="section active">
-    <textarea id="text-input" placeholder="Enter text..."></textarea>
-    <br />
-    <button onclick="encodeText()">Encode</button>
-    <button onclick="decodeText()">Decode</button>
-    <br />
-    <textarea id="text-output" readonly placeholder="Result..."></textarea>
-  </div>
+  <div class="container">
+    <!-- Text Panel -->
+    <div id="text" class="panel active">
+      <textarea id="textInput" placeholder="Enter your text here..."></textarea>
+      <div>
+        <button onclick="encodeText()">Encode</button>
+        <button onclick="decodeText()">Decode</button>
+      </div>
+      <div style="position: relative; width: 100%;">
+        <textarea id="textOutput" readonly placeholder="Output will appear here..."></textarea>
+        <button class="copy-btn" onclick="copyText('textOutput')">📋 Copy</button>
+      </div>
+    </div>
 
-  <!-- Image Encoding/Decoding -->
-  <div id="image" class="section">
-    <label class="custom-file-label" for="imageInput">📁 Choose Image</label>
-    <input type="file" id="imageInput" accept="image/*" onchange="encodeImage(event)" />
-    <br />
-    <textarea id="image-output" readonly placeholder="Base64 output..."></textarea>
-    <br />
-    <button onclick="decodeImage()">Decode & Show</button>
-    <br />
-    <img id="image-preview" class="result-img" />
+    <!-- Image Panel -->
+    <div id="image" class="panel">
+      <label for="fileInput" class="custom-file">📁 Choose Image</label>
+      <input type="file" id="fileInput" accept="image/*">
+      <img id="imgPreview" class="preview" src="" style="display:none" />
+      <div>
+        <button onclick="encodeImage()">Encode</button>
+      </div>
+      <div style="position: relative; width: 100%;">
+        <textarea id="imageOutput" class="output" readonly placeholder="Base64 code will appear here..."></textarea>
+        <button class="copy-btn" onclick="copyText('imageOutput')">📋 Copy</button>
+        <button class="paste-btn" onclick="pasteImage()">📥 Paste</button>
+      </div>
+    </div>
   </div>
 
   <script>
-    function switchTab(tab) {
-      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-      document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
-      document.getElementById(tab).classList.add('active');
-      event.target.classList.add('active');
+    function switchTab(tabName) {
+      document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+      document.querySelectorAll('.panel').forEach(panel => panel.classList.remove('active'));
+      document.querySelector(`.tab[onclick="switchTab('${tabName}')"]`).classList.add('active');
+      document.getElementById(tabName).classList.add('active');
     }
 
     function encodeText() {
-      const input = document.getElementById('text-input').value;
-      document.getElementById('text-output').value = btoa(input);
+      const input = document.getElementById('textInput').value;
+      const encoded = btoa(input);
+      document.getElementById('textOutput').value = encoded;
     }
 
     function decodeText() {
-      const input = document.getElementById('text-input').value;
+      const input = document.getElementById('textInput').value;
       try {
-        document.getElementById('text-output').value = atob(input);
-      } catch {
-        document.getElementById('text-output').value = 'Invalid Base64 string';
+        const decoded = atob(input);
+        document.getElementById('textOutput').value = decoded;
+      } catch (e) {
+        document.getElementById('textOutput').value = 'Invalid Base64 string!';
       }
     }
 
-    function encodeImage(e) {
-      const file = e.target.files[0];
+    function encodeImage() {
+      const file = document.getElementById('fileInput').files[0];
+      if (!file) return alert('Please select an image.');
+
       const reader = new FileReader();
-
-      reader.onload = function () {
-        const base64 = reader.result;
-        document.getElementById('image-output').value = base64;
+      reader.onload = function(e) {
+        const base64String = e.target.result;
+        document.getElementById('imageOutput').value = base64String;
+        document.getElementById('imgPreview').src = base64String;
+        document.getElementById('imgPreview').style.display = 'block';
       };
-
-      if (file) {
-        reader.readAsDataURL(file);
-      }
+      reader.readAsDataURL(file);
     }
 
-    function decodeImage() {
-      const base64 = document.getElementById('image-output').value;
-      const img = document.getElementById('image-preview');
-      img.src = base64;
+    function pasteImage() {
+      navigator.clipboard.readText().then(text => {
+        document.getElementById('imageOutput').value = text;
+        if (text.startsWith("data:image")) {
+          document.getElementById('imgPreview').src = text;
+          document.getElementById('imgPreview').style.display = 'block';
+        } else {
+          alert("Pasted content is not a valid image base64.");
+        }
+      }).catch(err => alert("Clipboard access denied."));
+    }
+
+    function copyText(id) {
+      const textArea = document.getElementById(id);
+      textArea.select();
+      document.execCommand("copy");
     }
   </script>
 </body>
