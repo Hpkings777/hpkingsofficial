@@ -149,7 +149,7 @@
 
     /* Modal Styles */
     .modal-overlay {
-      display: none; /* Hidden by default */
+      display: none;
       position: fixed;
       top: 0;
       left: 0;
@@ -182,7 +182,7 @@
 
     .modal-preview-area {
         width: 100%;
-        max-width: 500px; /* Limit modal image width */
+        max-width: 500px;
         margin: 0 auto;
         border: 2px solid #00e676;
         border-radius: 8px;
@@ -190,11 +190,11 @@
         display: flex;
         justify-content: center;
         align-items: center;
-        overflow: hidden; /* Important to contain the canvas */
+        overflow: hidden;
     }
 
     #modalCanvas {
-        display: block; /* Remove extra space below canvas */
+        display: block;
         max-width: 100%;
         height: auto;
     }
@@ -219,7 +219,7 @@
     }
 
     .modal-options input[type="range"] {
-        flex-grow: 1; /* Make slider take available space */
+        flex-grow: 1;
         max-width: 200px;
         -webkit-appearance: none;
         height: 8px;
@@ -268,6 +268,58 @@
     .modal-buttons button.cancel:hover {
         background: #cc0000;
     }
+
+    /* Notification Styles */
+    #notification-container {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      z-index: 2000;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      max-width: 300px;
+    }
+
+    .notification {
+      background: #333;
+      color: #fff;
+      padding: 12px 20px;
+      border-radius: 8px;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+      opacity: 0; /* Start invisible */
+      transform: translateX(100%); /* Start off-screen */
+      transition: opacity 0.5s ease-out, transform 0.5s ease-out;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .notification.show {
+      opacity: 1;
+      transform: translateX(0);
+    }
+
+    .notification.hide {
+      opacity: 0;
+      transform: translateX(100%);
+    }
+
+    .notification.success {
+      background: #28a745; /* Green */
+    }
+
+    .notification.error {
+      background: #dc3545; /* Red */
+    }
+
+    .notification.info {
+      background: #17a2b8; /* Blue */
+    }
+
+    .notification-icon {
+      font-size: 1.2em; /* Adjust icon size */
+    }
   </style>
 </head>
 <body>
@@ -297,8 +349,8 @@
       <img id="imgPreview" class="preview" src="" style="display:none" />
 
       <div>
-        <button onclick="encodeImageFromCurrentInput()">Encode</button>
-        <button onclick="decodeImageString()">Decode</button>
+        <button onclick="encodeImageFromCurrentInput()">Encode (from current output)</button>
+        <button onclick="decodeImageString()">Decode (to preview)</button>
       </div>
       <div style="position: relative; width: 100%;">
         <textarea id="imageOutput" class="output" placeholder="Base64 code will appear here..."></textarea>
@@ -328,6 +380,8 @@
       </div>
     </div>
   </div>
+
+  <div id="notification-container"></div>
 
   <script>
     // Global variables to store the original image data for modal use
@@ -362,21 +416,35 @@
 
     function encodeText() {
       const input = document.getElementById('textInput').value;
+      if (!input.trim()) {
+        showNotification('Please enter text to encode.', 'info');
+        return;
+      }
       try {
         const encoded = btoa(input);
         document.getElementById('textOutput').value = encoded;
+        showNotification('Text encoded successfully!', 'success');
       } catch (e) {
-        document.getElementById('textOutput').value = 'Error encoding text: ' + e.message;
+        document.getElementById('textOutput').value = '';
+        showNotification('Error encoding text: Input contains characters outside of the Latin1 range.', 'error');
+        console.error("Text encoding error:", e);
       }
     }
 
     function decodeText() {
       const input = document.getElementById('textInput').value;
+      if (!input.trim()) {
+        showNotification('Please enter Base64 text to decode.', 'info');
+        return;
+      }
       try {
         const decoded = atob(input);
         document.getElementById('textOutput').value = decoded;
+        showNotification('Text decoded successfully!', 'success');
       } catch (e) {
-        document.getElementById('textOutput').value = 'Invalid Base64 string!';
+        document.getElementById('textOutput').value = '';
+        showNotification('Invalid Base64 string for text decoding!', 'error');
+        console.error("Text decoding error:", e);
       }
     }
 
@@ -386,6 +454,12 @@
     document.getElementById('fileInput').addEventListener('change', function() {
         const file = this.files[0];
         if (!file) {
+            closeImageModal(); // If user cancels file selection
+            return;
+        }
+        if (!file.type.startsWith('image/')) {
+            showNotification('Please select a valid image file.', 'error');
+            this.value = ''; // Clear the file input
             return;
         }
 
@@ -393,12 +467,17 @@
         reader.onload = function(e) {
             originalImage.onload = function() {
                 openImageModal();
-                // Set initial values for modal sliders (optional, could reset to defaults)
-                document.getElementById('modalMaxWidthRange').value = 800;
-                document.getElementById('modalQualityRange').value = 0.8;
+                // Set initial values for modal sliders (could be remembered from last session or default)
+                document.getElementById('modalMaxWidthRange').value = 800; // Default max width
+                document.getElementById('modalQualityRange').value = 0.8;   // Default quality
                 updateModalRangeValue('modalMaxWidthRange', 'modalMaxWidthValue');
                 updateModalRangeValue('modalQualityRange', 'modalQualityValue', true);
                 drawPreviewImage(); // Draw initial preview
+            };
+            originalImage.onerror = function() {
+                showNotification('Could not load image. It might be corrupted.', 'error');
+                closeImageModal();
+                document.getElementById('fileInput').value = '';
             };
             originalImage.src = e.target.result;
         };
@@ -414,6 +493,7 @@
         // Clear original image source and file input to reset
         originalImage.src = '';
         document.getElementById('fileInput').value = '';
+        modalCtx.clearRect(0, 0, modalCanvas.width, modalCanvas.height); // Clear canvas
     }
 
     function drawPreviewImage() {
@@ -422,29 +502,30 @@
         }
 
         const MAX_WIDTH = parseInt(document.getElementById('modalMaxWidthRange').value, 10);
-        // Quality is not used for drawing, only for toDataURL, but good to get it.
-        // const QUALITY = parseFloat(document.getElementById('modalQualityRange').value);
+        const QUALITY = parseFloat(document.getElementById('modalQualityRange').value); // Though not used for drawing, good to keep context
 
         let width = originalImage.width;
         let height = originalImage.height;
 
-        // Calculate new dimensions while maintaining aspect ratio for display
-        if (width > height) {
-            if (width > MAX_WIDTH) {
-                height *= MAX_WIDTH / width;
-                width = MAX_WIDTH;
-            }
-        } else {
-            // Apply max height if portrait and taller than a reasonable limit
-            const MODAL_MAX_HEIGHT_PREVIEW = 400; // Limit height for modal display
-            if (height > MODAL_MAX_HEIGHT_PREVIEW) {
-                width *= MODAL_MAX_HEIGHT_PREVIEW / height;
-                height = MODAL_MAX_HEIGHT_PREVIEW;
-            }
-            if (width > MAX_WIDTH) { // Re-check width after height adjustment if it exceeds max_width
-                height *= MAX_WIDTH / width;
-                width = MAX_WIDTH;
-            }
+        // Calculate new dimensions while maintaining aspect ratio for modal display
+        // Limit max width in modal and also max height to fit screen
+        const MAX_MODAL_DISPLAY_WIDTH = 500;
+        const MAX_MODAL_DISPLAY_HEIGHT = 400; // Visual height limit for preview
+
+        // Scale based on selected max width
+        if (width > MAX_WIDTH) {
+            height *= MAX_WIDTH / width;
+            width = MAX_WIDTH;
+        }
+        // Then scale again if new height exceeds modal display limit
+        if (height > MAX_MODAL_DISPLAY_HEIGHT) {
+            width *= MAX_MODAL_DISPLAY_HEIGHT / height;
+            height = MAX_MODAL_DISPLAY_HEIGHT;
+        }
+        // Finally, scale again if new width exceeds modal display limit (can happen after height scale)
+        if (width > MAX_MODAL_DISPLAY_WIDTH) {
+            height *= MAX_MODAL_DISPLAY_WIDTH / width;
+            width = MAX_MODAL_DISPLAY_WIDTH;
         }
 
 
@@ -458,8 +539,8 @@
     }
 
     function applyImageSettings() {
-        if (!originalImage.src || !modalCanvas || !modalCtx) {
-            alert('No image selected or loaded for processing.');
+        if (!originalImage.src) { // Check originalImage.src rather than canvas
+            showNotification('No image selected or loaded for processing.', 'error');
             closeImageModal();
             return;
         }
@@ -470,23 +551,16 @@
         let finalWidth = originalImage.width;
         let finalHeight = originalImage.height;
 
-        // Calculate final dimensions for encoding
-        if (finalWidth > finalHeight) {
-            if (finalWidth > MAX_WIDTH_FINAL) {
-                finalHeight *= MAX_WIDTH_FINAL / finalWidth;
-                finalWidth = MAX_WIDTH_FINAL;
-            }
-        } else {
-            // Also ensure it's not excessively tall
-            const ABSOLUTE_MAX_HEIGHT_ENCODE = 1500; // A higher limit for actual encoding
-            if (finalHeight > ABSOLUTE_MAX_HEIGHT_ENCODE) {
-                finalWidth *= ABSOLUTE_MAX_HEIGHT_ENCODE / finalHeight;
-                finalHeight = ABSOLUTE_MAX_HEIGHT_ENCODE;
-            }
-            if (finalWidth > MAX_WIDTH_FINAL) { // Re-check width after height adjustment
-                finalHeight *= MAX_WIDTH_FINAL / finalWidth;
-                finalWidth = MAX_WIDTH_FINAL;
-            }
+        // Calculate final dimensions for encoding (can be larger than modal preview)
+        const ABSOLUTE_MAX_HEIGHT_ENCODE = 2000; // Prevent extremely tall outputs
+
+        if (finalWidth > MAX_WIDTH_FINAL) {
+            finalHeight *= MAX_WIDTH_FINAL / finalWidth;
+            finalWidth = MAX_WIDTH_FINAL;
+        }
+        if (finalHeight > ABSOLUTE_MAX_HEIGHT_ENCODE) {
+            finalWidth *= ABSOLUTE_MAX_HEIGHT_ENCODE / finalHeight;
+            finalHeight = ABSOLUTE_MAX_HEIGHT_ENCODE;
         }
 
         // Create a temporary canvas for the final encoding
@@ -504,57 +578,87 @@
         document.getElementById('imgPreview').style.display = 'block';
 
         closeImageModal();
-        alert('Image encoded with specified settings!');
+        showNotification('Image encoded successfully!', 'success');
     }
 
-    // This function will be called if the user clicks the main "Encode" button
-    // which should now encode the *currently displayed* image in imgPreview/imageOutput
-    // if a file wasn't picked via the modal flow.
+    // This button now encodes the content *already present* in the imageOutput textarea
+    // or provides guidance if no image is ready.
     function encodeImageFromCurrentInput() {
         const outputString = document.getElementById('imageOutput').value;
         if (outputString && outputString.startsWith("data:image")) {
-            alert('Image is already encoded based on your last selection or paste.');
-            // You could optionally re-encode with current (hidden) modal settings if desired
-            // But for simplicity, we assume "Encode" means to use the existing output
-        } else {
-            alert('Please choose an image via "Choose Image" to apply settings, or paste a Base64 string to decode.');
+            showNotification('Image is already encoded. Use "Choose Image" to re-encode with new settings.', 'info');
+        } else if (document.getElementById('fileInput').files.length > 0) {
+            // If a file is chosen but modal not applied yet
+            showNotification('Please use "Apply & Encode" in the Image Settings dialog to process the chosen image.', 'info');
+        }
+        else {
+            showNotification('No image selected or Base64 string to encode. Choose an image first.', 'info');
         }
     }
 
-
     function decodeImageString() {
-      const base64String = document.getElementById('imageOutput').value;
+      const base64String = document.getElementById('imageOutput').value.trim();
       if (!base64String) {
-        alert('Please paste or encode an image Base64 string first to decode.');
+        showNotification('Please paste a Base64 image string into the text area to decode.', 'info');
+        document.getElementById('imgPreview').style.display = 'none';
+        document.getElementById('imgPreview').src = '';
         return;
       }
 
-      if (base64String.startsWith("data:image/")) {
-        document.getElementById('imgPreview').src = base64String;
-        document.getElementById('imgPreview').style.display = 'block';
-        alert('Image decoded and displayed in preview.');
-      } else {
-        alert("Pasted content is not a valid image Base64 string (missing 'data:image/' prefix).");
+      // Stricter validation for image Base64 string
+      if (!base64String.startsWith("data:image/") || base64String.indexOf(';base64,') === -1) {
+        showNotification("Invalid Base64 image string. It should start with 'data:image/...' and contain ';base64,'.", 'error');
         document.getElementById('imgPreview').style.display = 'none';
         document.getElementById('imgPreview').src = '';
+        return;
       }
+
+      const img = new Image();
+      img.onload = function() {
+        document.getElementById('imgPreview').src = base64String;
+        document.getElementById('imgPreview').style.display = 'block';
+        showNotification('Image decoded and displayed in preview.', 'success');
+      };
+      img.onerror = function() {
+        showNotification('Failed to decode Base64 string to image. It might be corrupted or malformed.', 'error');
+        document.getElementById('imgPreview').style.display = 'none';
+        document.getElementById('imgPreview').src = '';
+      };
+      img.src = base64String; // Attempt to load the image
     }
 
     function pasteImage() {
       navigator.clipboard.readText().then(text => {
-        document.getElementById('imageOutput').value = text;
-        currentEncodedImage = text; // Store for potential decode/copy
+        text = text.trim(); // Trim whitespace
+        if (!text) {
+          showNotification('Clipboard is empty or contains only whitespace.', 'info');
+          return;
+        }
 
-        if (text.startsWith("data:image")) {
-          document.getElementById('imgPreview').src = text;
-          document.getElementById('imgPreview').style.display = 'block';
+        document.getElementById('imageOutput').value = text;
+        currentEncodedImage = text; // Store for potential copy/decode
+
+        if (text.startsWith("data:image/") && text.indexOf(';base64,') !== -1) {
+          // Attempt to display immediately, but also confirm it's valid via image object
+          const img = new Image();
+          img.onload = function() {
+              document.getElementById('imgPreview').src = text;
+              document.getElementById('imgPreview').style.display = 'block';
+              showNotification('Pasted Base64 image displayed in preview.', 'success');
+          };
+          img.onerror = function() {
+              showNotification('Pasted content looks like Base64 but failed to load as an image.', 'error');
+              document.getElementById('imgPreview').style.display = 'none';
+              document.getElementById('imgPreview').src = '';
+          };
+          img.src = text;
         } else {
-          alert("Pasted content is not a valid image base64. Ensure it starts with 'data:image/'.");
+          showNotification("Pasted content is not a valid image Base64 string. Ensure it starts with 'data:image/' and contains ';base64,'.", 'error');
           document.getElementById('imgPreview').style.display = 'none';
           document.getElementById('imgPreview').src = '';
         }
       }).catch(err => {
-        alert("Clipboard access denied. Please ensure your browser grants permission.");
+        showNotification("Clipboard access denied. Please grant permission.", 'error');
         console.error("Clipboard paste error:", err);
       });
     }
@@ -563,19 +667,20 @@
       const textArea = document.getElementById(id);
       const textToCopy = (id === 'imageOutput' && currentEncodedImage) ? currentEncodedImage : textArea.value;
 
-      if (!textToCopy) {
-        alert('Nothing to copy!');
+      if (!textToCopy.trim()) {
+        showNotification('Nothing to copy!', 'info');
         return;
       }
 
       navigator.clipboard.writeText(textToCopy)
         .then(() => {
-          alert('Copied to clipboard!');
+          showNotification('Copied to clipboard!', 'success');
         })
         .catch(err => {
+          // Fallback for older browsers or if permission is denied
           textArea.select();
           document.execCommand("copy");
-          alert('Copied to clipboard (fallback)!');
+          showNotification('Copied to clipboard (fallback)!', 'info');
           console.warn("Clipboard writeText failed, used fallback:", err);
         });
     }
@@ -588,6 +693,75 @@
         } else {
             valueSpan.textContent = range.value + 'px';
         }
+    }
+
+    // --- Custom Notification System ---
+    let notificationTimeout;
+
+    function showNotification(message, type = 'info', duration = 3000) {
+        const container = document.getElementById('notification-container');
+        let notificationElement = document.querySelector('.notification');
+
+        // If no notification element exists, create one
+        if (!notificationElement) {
+            notificationElement = document.createElement('div');
+            notificationElement.className = 'notification';
+            // Optional: add an icon based on type
+            const iconSpan = document.createElement('span');
+            iconSpan.className = 'notification-icon';
+            notificationElement.appendChild(iconSpan);
+            const messageSpan = document.createElement('span');
+            messageSpan.className = 'notification-message';
+            notificationElement.appendChild(messageSpan);
+            container.appendChild(notificationElement);
+        }
+
+        // Clear previous classes and set new ones
+        notificationElement.className = 'notification'; // Reset classes
+        notificationElement.classList.add(type);
+        notificationElement.querySelector('.notification-message').textContent = message;
+
+        // Set icon
+        const iconSpan = notificationElement.querySelector('.notification-icon');
+        switch (type) {
+            case 'success':
+                iconSpan.textContent = '✔️'; // Unicode checkmark
+                break;
+            case 'error':
+                iconSpan.textContent = '❌'; // Unicode X mark
+                break;
+            case 'info':
+                iconSpan.textContent = 'ℹ️'; // Unicode info icon
+                break;
+            default:
+                iconSpan.textContent = '';
+        }
+
+        // Trigger show animation
+        // Use a small timeout to ensure the browser registers the class removal before adding 'show'
+        // This makes the transition re-run if a new notification comes quickly.
+        setTimeout(() => {
+            notificationElement.classList.add('show');
+        }, 10);
+
+
+        // Clear any existing hide timeout
+        if (notificationTimeout) {
+            clearTimeout(notificationTimeout);
+        }
+
+        // Set timeout to hide the notification
+        notificationTimeout = setTimeout(() => {
+            notificationElement.classList.remove('show');
+            notificationElement.classList.add('hide'); // Add hide class for exit animation
+            // Remove element after transition completes
+            notificationElement.addEventListener('transitionend', function handler() {
+                if (!notificationElement.classList.contains('show')) { // Only remove if actually hidden
+                    notificationElement.remove();
+                    notificationElement.removeEventListener('transitionend', handler);
+                }
+            });
+        }, duration);
     }
   </script>
 </body>
