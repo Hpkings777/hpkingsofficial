@@ -30,6 +30,7 @@ const IMAGE_RESOLUTION_PRESETS = {
     '720': 720, '1080': 1080, '1440': 1440, '2160': 2160,
     'original': null // Special case for original size
 };
+const MAX_FILE_SIZE_BYTES = 1 * 1024 * 1024; // 1MB in bytes
 
 // --- Cropping State Variables ---
 let isCropping = false;
@@ -118,22 +119,20 @@ function getScaledDimensions(originalWidth, originalHeight, maxDimension) {
 /** Clears image-related UI elements and state. */
 function clearImageUI() {
     elements.imgPreview.style.display = 'none';
-    elements.imgPreview.src = ''; // Ensure imgPreview src is cleared
+    elements.imgPreview.src = '';
     elements.imageOutput.value = '';
     elements.fileInput.value = '';
-    currentEncodedImage = ''; // Clear stored Base64
+    currentEncodedImage = '';
 
-    // Ensure originalImage is properly reset and detached from any previous state
-    // Create a brand new Image object to prevent lingering errors or events
     if (originalImage) {
-        originalImage.onload = null; // Remove old handlers
+        originalImage.onload = null;
         originalImage.onerror = null;
-        originalImage.src = ''; // Clear existing source
+        originalImage.src = '';
     }
-    originalImage = new Image(); // Re-initialize as a new object
+    originalImage = new Image();
 
     if (modalCtx) modalCtx.clearRect(0, 0, elements.modalCanvas.width, elements.modalCanvas.height);
-    resetCrop(); // Reset crop area as well
+    resetCrop();
 }
 
 /** Gets mouse coordinates relative to the canvas. */
@@ -157,7 +156,7 @@ function resetCrop() {
 }
 
 function startCrop(e) {
-    if (e.button !== 0) return; // Only allow left click
+    if (e.button !== 0) return;
     isCropping = true;
     const pos = getMousePos(elements.modalCanvas, e);
     cropStartX = pos.x;
@@ -208,7 +207,7 @@ function switchTab(event) {
   document.getElementById(tabName).classList.add('active');
 
   if (tabName !== 'image') {
-    clearImageUI(); // Ensure image state is fully reset when leaving image tab
+    clearImageUI();
     closeImageModal();
   }
 }
@@ -263,15 +262,36 @@ function handleFileInputChange() {
     }
 
     // Always clear existing image UI and state before loading a new one
-    clearImageUI(); // This will ensure originalImage is a fresh object
+    clearImageUI();
 
     const reader = new FileReader();
     reader.onload = (e) => {
         // Assign handlers for the *new* originalImage object
         originalImage.onload = () => {
             openImageModal();
-            elements.imageQualityPreset.value = '720';
-            elements.modalCompressionRange.value = 0.8;
+
+            // --- New: Image Size Check and Automatic Adjustment ---
+            let compressionToSet = 0.8; // Default good quality
+            let resolutionToSet = '720'; // Default HD resolution
+
+            // Get estimated encoded size (approximate for initial check, real size is after canvas processing)
+            // Base64 string is roughly 4/3 the binary size + header overhead.
+            const estimatedBase64Size = e.target.result.length * 0.75; // Roughly convert base64 length to bytes
+
+            if (file.size > MAX_FILE_SIZE_BYTES || estimatedBase64Size > MAX_FILE_SIZE_BYTES) {
+                showNotification(
+                    `Image size (${(file.size / (1024 * 1024)).toFixed(2)} MB) is greater than 1MB. ` +
+                    `Automatically adjusting quality and resolution for better performance.`,
+                    'info',
+                    5000 // Longer duration for this important notification
+                );
+                // Reduce quality and resolution for large images
+                resolutionToSet = '360'; // Set to a lower resolution preset
+                compressionToSet = 0.6;   // Set to a lower compression
+            }
+
+            elements.imageQualityPreset.value = resolutionToSet;
+            elements.modalCompressionRange.value = compressionToSet;
             updateRangeValueDisplay(elements.modalCompressionRange, elements.modalCompressionValue, true);
             resetCrop();
             drawPreviewImage();
@@ -284,7 +304,7 @@ function handleFileInputChange() {
         };
         originalImage.src = e.target.result;
     };
-    reader.onerror = (err) => { // Handle FileReader errors too
+    reader.onerror = (err) => {
         showNotification('Error reading file. Please try again.', 'error');
         console.error("FileReader error:", err);
         elements.fileInput.value = '';
@@ -300,14 +320,12 @@ function openImageModal() {
 /** Closes the image settings modal. */
 function closeImageModal() {
     elements.imageModalOverlay.classList.remove('show');
-    // Important: Clear originalImage.src and reinitialize to prevent stale data
-    clearImageUI(); // Use the robust clear function
+    clearImageUI();
 }
 
 /** Draws the image preview on the modal canvas, applying scaling based on chosen resolution. */
 function drawPreviewImage() {
     if (!originalImage || !originalImage.src || !elements.modalCanvas || !modalCtx) {
-        // Ensure originalImage is valid and has a source
         console.warn("Attempted to draw preview without a valid image source.");
         return;
     }
@@ -321,8 +339,6 @@ function drawPreviewImage() {
 
     let { width: naturalWidth, height: naturalHeight } = originalImage;
     if (naturalWidth === 0 || naturalHeight === 0) {
-        // If image dimensions are not yet available, attempt to redraw after a short delay
-        // This is a safeguard, originalImage.onload should ideally prevent this.
         setTimeout(drawPreviewImage, 100);
         return;
     }
@@ -350,7 +366,7 @@ function drawPreviewImage() {
 
 /** Applies image settings (resolution, compression, and cropping) and encodes the image. */
 function applyImageSettings() {
-    if (!originalImage || !originalImage.src) { // Check for valid originalImage object and src
+    if (!originalImage || !originalImage.src) {
         showNotification('No image selected for processing.', 'error');
         closeImageModal();
         return;
@@ -409,13 +425,24 @@ function applyImageSettings() {
         elements.imageOutput.value = currentEncodedImage;
         elements.imgPreview.src = currentEncodedImage;
         elements.imgPreview.style.display = 'block';
-        showNotification('Image encoded successfully!', 'success');
+
+        // --- New: Final Encoded Size Check ---
+        const finalBase64Bytes = currentEncodedImage.length * 0.75; // Approximate byte size of the Base64 data
+        if (finalBase64Bytes > MAX_FILE_SIZE_BYTES) {
+            showNotification(
+                `Encoded image size (${(finalBase64Bytes / (1024 * 1024)).toFixed(2)} MB) is still large. ` +
+                `Consider a lower resolution or compression for optimal performance.`,
+                'info', // Use info, as it was already processed, just a warning
+                5000
+            );
+        } else {
+             showNotification('Image encoded successfully!', 'success');
+        }
+
     } catch (e) {
         showNotification('Error encoding image. Corrupted data or unsupported format?', 'error');
         console.error("Image encoding failed:", e);
-        clearImageUI(); // Clear everything on encoding failure
     } finally {
-        // Always ensure a clean state after attempting to encode
         clearImageUI();
         closeImageModal();
     }
@@ -448,17 +475,14 @@ function decodeImageString() {
     return;
   }
 
-  // Use a local image object for decoding to avoid interfering with originalImage
   const tempImg = new Image();
   tempImg.onload = function() {
     elements.imgPreview.src = base64String;
     elements.imgPreview.style.display = 'block';
     showNotification('Image decoded and displayed in preview.', 'success');
-    // Important: Clear out originalImage state if a Base64 string is successfully decoded here
-    // to prevent it interfering if user then tries to choose a file.
     clearImageUI(); // Clears all image-related state for a clean start
-    elements.imageOutput.value = base64String; // Re-set the output value after clear
-    elements.imgPreview.src = base64String; // Re-set the preview src
+    elements.imageOutput.value = base64String;
+    elements.imgPreview.src = base64String;
     elements.imgPreview.style.display = 'block';
   };
   tempImg.onerror = function() {
@@ -481,15 +505,14 @@ function pasteImage() {
     currentEncodedImage = text;
 
     if (text.startsWith("data:image/") && text.indexOf(';base64,') !== -1) {
-      const tempImg = new Image(); // Use tempImg to avoid originalImage interference
+      const tempImg = new Image();
       tempImg.onload = function() {
           elements.imgPreview.src = text;
           elements.imgPreview.style.display = 'block';
           showNotification('Pasted Base64 image displayed in preview.', 'success');
-          // Clear originalImage state to prevent interference
-          clearImageUI(); // Clears all image-related state for a clean start
-          elements.imageOutput.value = text; // Re-set the output value after clear
-          elements.imgPreview.src = text; // Re-set the preview src
+          clearImageUI();
+          elements.imageOutput.value = text;
+          elements.imgPreview.src = text;
           elements.imgPreview.style.display = 'block';
       };
       tempImg.onerror = function() {
@@ -499,7 +522,7 @@ function pasteImage() {
       tempImg.src = text;
     } else {
       showNotification("Pasted content is not a valid image Base64 string.", 'error');
-      clearImageUI(); // Clear UI if paste isn't valid image Base64
+      clearImageUI();
     }
   }).catch(err => {
     showNotification("Clipboard access denied. Please grant permission to read clipboard.", 'error');
