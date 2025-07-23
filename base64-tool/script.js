@@ -16,13 +16,13 @@ const elements = {
   modalCompressionValue: document.getElementById('modalCompressionValue'),
   imageQualityPreset: document.getElementById('imageQualityPreset'),
   notificationContainer: document.getElementById('notification-container'),
-  modalPreviewArea: document.querySelector('.modal-preview-area'), // New: for cropping
-  cropSelectionBox: document.getElementById('cropSelectionBox'), // New: for cropping
-  resetCropBtn: document.getElementById('resetCropBtn'), // New: for resetting crop
+  modalPreviewArea: document.querySelector('.modal-preview-area'),
+  cropSelectionBox: document.getElementById('cropSelectionBox'),
+  resetCropBtn: document.getElementById('resetCropBtn'),
 };
 
 // --- Global State Variables ---
-let originalImage = new Image();
+let originalImage = new Image(); // This holds the image loaded into the modal for processing
 let modalCtx = elements.modalCanvas.getContext('2d');
 let currentEncodedImage = ''; // Stores the final encoded Base64 for copying
 const IMAGE_RESOLUTION_PRESETS = {
@@ -45,50 +45,50 @@ let isShowingNotification = false;
 /** Displays a custom notification message. */
 function showNotification(message, type = 'info', duration = 3000) {
     const notificationElement = document.createElement('div');
-    notificationElement.className = `notification ${type}`; // Add type directly
+    notificationElement.className = `notification ${type}`;
     notificationElement.innerHTML = `
         <span class="notification-icon">${getNotificationIcon(type)}</span>
         <span class="notification-message">${message}</span>
     `;
     elements.notificationContainer.appendChild(notificationElement);
-    notificationQueue.push(notificationElement); // Add element directly to queue
+    notificationQueue.push(notificationElement);
     processNotificationQueue(duration);
 }
 
 /** Returns a Unicode icon based on notification type. */
 const getNotificationIcon = (type) => ({
   success: '✔️', error: '❌', info: 'ℹ️'
-})[type] || ''; // Fallback for unknown types
+})[type] || '';
 
 /** Processes the notification queue. */
 function processNotificationQueue(duration) {
     if (isShowingNotification || notificationQueue.length === 0) {
-        return; // Already showing or nothing to show
+        return;
     }
 
     isShowingNotification = true;
-    const currentNotificationElement = notificationQueue.shift(); // Get the next notification from the queue
+    const currentNotificationElement = notificationQueue.shift();
 
-    // Apply 'active' class after a brief delay for transition
     setTimeout(() => {
         currentNotificationElement.classList.add('active');
-    }, 50); // Small delay to ensure CSS transition gets applied correctly
+    }, 50);
 
-    // Set timeout to hide the notification
+    const removeNotificationHandler = function() {
+        if (currentNotificationElement.classList.contains('removing')) {
+            currentNotificationElement.remove();
+            // IMPORTANT: Remove the event listener to prevent memory leaks/re-triggers
+            currentNotificationElement.removeEventListener('transitionend', removeNotificationHandler);
+            isShowingNotification = false;
+            processNotificationQueue(duration); // Process next
+        }
+    };
+
+    // Add the event listener BEFORE setting timeout to ensure it's caught
+    currentNotificationElement.addEventListener('transitionend', removeNotificationHandler);
+
     setTimeout(() => {
         currentNotificationElement.classList.remove('active');
-        currentNotificationElement.classList.add('removing'); // Start the 'hide' animation
-
-        // Remove element after transition completes
-        currentNotificationElement.addEventListener('transitionend', function handler() {
-            // Ensure it's the 'removing' transition ending before removal
-            if (currentNotificationElement.classList.contains('removing')) {
-                currentNotificationElement.remove();
-                currentNotificationElement.removeEventListener('transitionend', handler); // Clean up listener
-                isShowingNotification = false; // Allow next notification to show
-                processNotificationQueue(duration); // Process next in queue
-            }
-        });
+        currentNotificationElement.classList.add('removing');
     }, duration);
 }
 
@@ -117,13 +117,18 @@ function getScaledDimensions(originalWidth, originalHeight, maxDimension) {
     };
 }
 
-/** Clears image-related UI elements. */
+/** Clears image-related UI elements and state. */
 function clearImageUI() {
     elements.imgPreview.style.display = 'none';
     elements.imgPreview.src = '';
     elements.imageOutput.value = '';
     elements.fileInput.value = '';
     currentEncodedImage = ''; // Clear stored Base64
+
+    // Crucially, reset the originalImage object and its source
+    originalImage = new Image(); // Create a new Image object
+    originalImage.src = ''; // Clear its source immediately
+
     if (modalCtx) modalCtx.clearRect(0, 0, elements.modalCanvas.width, elements.modalCanvas.height);
     resetCrop(); // Reset crop area as well
 }
@@ -149,11 +154,11 @@ function resetCrop() {
 }
 
 function startCrop(e) {
+    if (e.button !== 0) return; // Only allow left click
     isCropping = true;
     const pos = getMousePos(elements.modalCanvas, e);
     cropStartX = pos.x;
     cropStartY = pos.y;
-    // Initialize crop box to a point
     cropBoxData = { x: cropStartX, y: cropStartY, width: 0, height: 0 };
     elements.cropSelectionBox.style.display = 'block';
     updateCropBoxUI();
@@ -174,6 +179,7 @@ function duringCrop(e) {
 }
 
 function endCrop() {
+    if (!isCropping) return; // Prevent re-trigger if already ended
     isCropping = false;
     // Ensure crop box has valid dimensions, if not, hide it
     if (cropBoxData.width < 5 || cropBoxData.height < 5) { // Minimum 5x5 pixels
@@ -254,22 +260,24 @@ function handleFileInputChange() {
         return;
     }
 
+    // Reset originalImage to ensure a fresh load
+    originalImage = new Image();
+    originalImage.onload = () => {
+        openImageModal();
+        elements.imageQualityPreset.value = '720';
+        elements.modalCompressionRange.value = 0.8;
+        updateRangeValueDisplay(elements.modalCompressionRange, elements.modalCompressionValue, true);
+        resetCrop();
+        drawPreviewImage();
+    };
+    originalImage.onerror = () => {
+        showNotification('Could not load image. It might be corrupted or an unsupported format.', 'error');
+        closeImageModal();
+        elements.fileInput.value = '';
+    };
+
     const reader = new FileReader();
-    reader.onload = async (e) => { // Use async here
-        originalImage.onload = () => {
-            openImageModal();
-            // Reset to default preset on new image load
-            elements.imageQualityPreset.value = '720'; // Default to 720p
-            elements.modalCompressionRange.value = 0.8;   // Default compression
-            updateRangeValueDisplay(elements.modalCompressionRange, elements.modalCompressionValue, true);
-            resetCrop(); // Ensure crop is reset for new image
-            drawPreviewImage(); // Draw preview without specific maxDimension initially
-        };
-        originalImage.onerror = () => {
-            showNotification('Could not load image. It might be corrupted or an unsupported format.', 'error');
-            closeImageModal();
-            elements.fileInput.value = '';
-        };
+    reader.onload = (e) => {
         originalImage.src = e.target.result;
     };
     reader.readAsDataURL(file);
@@ -283,11 +291,12 @@ function openImageModal() {
 /** Closes the image settings modal. */
 function closeImageModal() {
     elements.imageModalOverlay.classList.remove('show');
-    // Clear original image source and file input to reset state
+    // Important: Clear originalImage.src and reinitialize to prevent stale data
+    originalImage = new Image();
     originalImage.src = '';
-    elements.fileInput.value = '';
-    modalCtx.clearRect(0, 0, elements.modalCanvas.width, elements.modalCanvas.height); // Clear canvas
-    resetCrop(); // Ensure crop is reset when modal closes
+    elements.fileInput.value = ''; // Clear file input
+    modalCtx.clearRect(0, 0, elements.modalCanvas.width, elements.modalCanvas.height);
+    resetCrop();
 }
 
 /** Applies the selected quality preset to the image sizing and calls for preview redraw. */
@@ -304,32 +313,34 @@ function drawPreviewImage() {
     const currentSelectedPreset = elements.imageQualityPreset.value;
     let targetDimension = IMAGE_RESOLUTION_PRESETS[currentSelectedPreset];
 
-    if (targetDimension === null) { // 'original' selected
-        targetDimension = Math.max(originalImage.width, originalImage.height); // Use the larger dimension
+    if (targetDimension === null) {
+        targetDimension = Math.max(originalImage.width, originalImage.height);
+    }
+
+    let { width: naturalWidth, height: naturalHeight } = originalImage;
+    if (naturalWidth === 0 || naturalHeight === 0) {
+        // Fallback or error if image dimensions aren't loaded yet
+        console.warn("Original image dimensions not available yet for preview.");
+        return;
     }
 
     // Calculate dimensions for encoding (can be larger than modal preview)
-    let { width, height } = getScaledDimensions(originalImage.width, originalImage.height, targetDimension);
+    let { width, height } = getScaledDimensions(naturalWidth, naturalHeight, targetDimension);
 
-    // Ensure modal preview itself doesn't exceed its visual bounds, independent of encoding size
-    const MAX_MODAL_DISPLAY_WIDTH = 450; // Max width for the canvas display area
-    const MAX_MODAL_DISPLAY_HEIGHT = 400; // Max height for the canvas display area
+    const MAX_MODAL_DISPLAY_WIDTH = 450;
+    const MAX_MODAL_DISPLAY_HEIGHT = 400;
 
     let displayWidth = width;
     let displayHeight = height;
 
-    // Scale down if image is too large for the modal preview area
     ({ width: displayWidth, height: displayHeight } = getScaledDimensions(width, height, Math.max(MAX_MODAL_DISPLAY_WIDTH, MAX_MODAL_DISPLAY_HEIGHT)));
 
-    // Set canvas dimensions to display dimensions
     elements.modalCanvas.width = displayWidth;
     elements.modalCanvas.height = displayHeight;
 
-    // Clear canvas and draw image
     modalCtx.clearRect(0, 0, elements.modalCanvas.width, elements.modalCanvas.height);
     modalCtx.drawImage(originalImage, 0, 0, displayWidth, displayHeight);
 
-    // Keep crop box updated if it's active
     if (cropBoxData.width > 0 && cropBoxData.height > 0) {
         updateCropBoxUI();
     }
@@ -346,49 +357,56 @@ function applyImageSettings() {
     const selectedPreset = elements.imageQualityPreset.value;
     let targetDimensionFinal = IMAGE_RESOLUTION_PRESETS[selectedPreset];
 
-    if (targetDimensionFinal === null) { // 'original' selected
+    if (targetDimensionFinal === null) {
         targetDimensionFinal = Math.max(originalImage.width, originalImage.height);
     }
 
     const compressionQualityFinal = parseFloat(elements.modalCompressionRange.value);
 
-    // Calculate the final scaled dimensions (before considering crop)
     let { width: scaledImgWidth, height: scaledImgHeight } = getScaledDimensions(originalImage.width, originalImage.height, targetDimensionFinal);
 
-    // Create a temporary canvas for the final encoding
     const tempCanvas = document.createElement('canvas');
     const tempCtx = tempCanvas.getContext('2d');
 
     // Calculate scaling factor from original image to modal preview display
-    const scaleFactorToModal = originalImage.width / elements.modalCanvas.width;
+    // This is used to translate visual crop box on canvas to original image pixels
+    const scaleFactorModalToOriginal = originalImage.width / elements.modalCanvas.width;
 
     let sourceX = 0, sourceY = 0, sourceWidth = originalImage.width, sourceHeight = originalImage.height;
     let destX = 0, destY = 0, destWidth = scaledImgWidth, destHeight = scaledImgHeight;
 
-    // If a crop area is defined, adjust source and destination for drawing
     if (cropBoxData.width > 0 && cropBoxData.height > 0) {
         // Convert crop box coordinates from modal canvas display size to original image size
-        sourceX = Math.round(cropBoxData.x * scaleFactorToModal);
-        sourceY = Math.round(cropBoxData.y * scaleFactorToModal);
-        sourceWidth = Math.round(cropBoxData.width * scaleFactorToModal);
-        sourceHeight = Math.round(cropBoxData.height * scaleFactorToModal);
+        sourceX = Math.round(cropBoxData.x * scaleFactorModalToOriginal);
+        sourceY = Math.round(cropBoxData.y * scaleFactorModalToOriginal);
+        sourceWidth = Math.round(cropBoxData.width * scaleFactorModalToOriginal);
+        sourceHeight = Math.round(cropBoxData.height * scaleFactorModalToOriginal);
 
-        // Adjust destination canvas dimensions to match cropped area's scaled size
-        // The aspect ratio of the cropped area is maintained.
-        destWidth = Math.round(sourceWidth * (scaledImgWidth / originalImage.width));
-        destHeight = Math.round(sourceHeight * (scaledImgHeight / originalImage.height));
+        // Calculate destination dimensions based on the cropped source region's aspect ratio
+        // and the desired final scaled output size.
+        // We want the cropped image to fit into the overall target resolution proportion.
+        // A simple way to do this is to take the actual pixel dimensions of the cropped area
+        // from the original image and then scale them down to the final target size.
+        const croppedAspectRatio = sourceWidth / sourceHeight;
+        if (croppedAspectRatio > (scaledImgWidth / scaledImgHeight)) {
+            // Cropped area is wider than target ratio, fit by width
+            destWidth = scaledImgWidth;
+            destHeight = Math.round(scaledImgWidth / croppedAspectRatio);
+        } else {
+            // Cropped area is taller than target ratio, fit by height
+            destHeight = scaledImgHeight;
+            destWidth = Math.round(scaledImgHeight * croppedAspectRatio);
+        }
 
         tempCanvas.width = destWidth;
         tempCanvas.height = destHeight;
 
-        // Draw the cropped portion from original image to the temporary canvas
         tempCtx.drawImage(
             originalImage,
-            sourceX, sourceY, sourceWidth, sourceHeight, // Source image region
-            destX, destY, destWidth, destHeight          // Destination on temp canvas
+            sourceX, sourceY, sourceWidth, sourceHeight,
+            0, 0, destWidth, destHeight // Draw to (0,0) of the new tempCanvas
         );
     } else {
-        // No crop, just scale and draw the entire image
         tempCanvas.width = scaledImgWidth;
         tempCanvas.height = scaledImgHeight;
         tempCtx.drawImage(originalImage, 0, 0, scaledImgWidth, scaledImgHeight);
@@ -398,6 +416,10 @@ function applyImageSettings() {
     elements.imageOutput.value = currentEncodedImage;
     elements.imgPreview.src = currentEncodedImage;
     elements.imgPreview.style.display = 'block';
+
+    // Crucial: Reset originalImage here after encoding is complete
+    originalImage = new Image();
+    originalImage.src = ''; // Clear its source to prevent issues on subsequent loads
 
     closeImageModal();
     showNotification('Image encoded successfully!', 'success');
@@ -420,7 +442,7 @@ function decodeImageString() {
   const base64String = elements.imageOutput.value.trim();
   if (!base64String) {
     showNotification('Please paste a Base64 image string into the text area to decode.', 'info');
-    clearImageUI(); // Clear preview if input is empty
+    clearImageUI();
     return;
   }
 
@@ -493,7 +515,6 @@ function copyText(event) {
       showNotification('Copied to clipboard!', 'success');
     })
     .catch(err => {
-      // Fallback for older browsers or if permission is denied
       textArea.select();
       document.execCommand("copy");
       showNotification('Copied to clipboard (fallback)!', 'info');
@@ -503,43 +524,35 @@ function copyText(event) {
 
 // --- Event Listeners (Centralized) ---
 document.addEventListener('DOMContentLoaded', () => {
-  // Initial setup for modal range display
   updateRangeValueDisplay(elements.modalCompressionRange, elements.modalCompressionValue, true);
-  // No explicit applyQualityPreset() here, as drawPreviewImage is called on image load/modal open
 
-  // Tab switching (delegated to parent .tabs element)
   elements.tabs.addEventListener('click', (event) => {
     if (event.target.classList.contains('tab')) {
       switchTab(event);
     }
   });
 
-  // Text panel buttons
   document.getElementById('encodeTextBtn').addEventListener('click', encodeText);
   document.getElementById('decodeTextBtn').addEventListener('click', decodeText);
 
-  // Image panel buttons and file input
   elements.fileInput.addEventListener('change', handleFileInputChange);
   document.getElementById('encodeImageBtn').addEventListener('click', encodeImageFromCurrentInput);
   document.getElementById('decodeImageBtn').addEventListener('click', decodeImageString);
   document.getElementById('pasteImageBtn').addEventListener('click', pasteImage);
 
-  // Delegated copy buttons for both textareas (using data-target attribute)
   document.querySelectorAll('.copy-btn').forEach(btn => {
     btn.addEventListener('click', copyText);
   });
 
-  // Modal controls
-  elements.imageQualityPreset.addEventListener('change', drawPreviewImage); // Just redraw preview, settings apply on 'Apply'
+  elements.imageQualityPreset.addEventListener('change', drawPreviewImage);
   elements.modalCompressionRange.addEventListener('input', () => {
     updateRangeValueDisplay(elements.modalCompressionRange, elements.modalCompressionValue, true);
-    // No need to redraw image on compression change as it only affects encoding quality, not display.
   });
   document.getElementById('applyImageSettingsBtn').addEventListener('click', applyImageSettings);
   document.getElementById('cancelImageModalBtn').addEventListener('click', closeImageModal);
   elements.resetCropBtn.addEventListener('click', resetCrop);
 
-  // Cropping Event Listeners (on the modal preview area)
+  // Cropping Event Listeners
   elements.modalPreviewArea.addEventListener('mousedown', startCrop);
   elements.modalPreviewArea.addEventListener('mousemove', duringCrop);
   elements.modalPreviewArea.addEventListener('mouseup', endCrop);
