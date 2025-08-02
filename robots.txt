@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://hpkings777.github.io/Bhoot-Services/sitemap.xml
