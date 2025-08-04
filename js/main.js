@@ -41,6 +41,6 @@ document.querySelectorAll('.launch-btn').forEach(btn => {
 
       // Redirect
       window.location.href = url;
-    }, 8000);
+    }, 5000);
   });
 });
