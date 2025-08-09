@@ -1,123 +1,163 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <link rel="icon" href="favicon.png" type="image/png">
-  <script type="application/ld+json">
-{
-  "@context": "https://schema.org",
-  "@type": "Organization",
-  "name": "HPkings Bhoot Services",
-  "url": "https://hpkings777.github.io/Bhoot-Services/",
-  "logo": "https://hpkings777.github.io/Bhoot-Services/logo.png"
-}
-</script>
-  <meta name="google-site-verification" content="PY2q8xVF0ATK0xTshVYK_kwbVekPETeq84Q22gzfSNg" />
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <meta name="description" content="Bhoot Services - Tools made with preciousion">
-<meta name="keywords" content="Bhoot, HPkings, GhostCrypt, Book Store, Bhoot Services,   Hpkings, Download, Services">
-<meta name="author" content="HPkings">
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="description" content="Bhoot Services - Tools made with precision" />
   <title>HPkings | Bhoot Services</title>
-  <link rel="stylesheet" href="css/style.css" />
+  <link rel="icon" href="favicon.png" type="image/png">
+  <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
+  <div class="app-shell">
+    <!-- SIDEBAR -->
+    <aside class="sidebar" id="sidebar">
+      <div class="brand">
+        <img src="logo.png" alt="logo" class="logo" onerror="this.style.display='none'">
+        <div class="brand-text">
+          <h3>HPkings</h3>
+          <small>Bhoot Services</small>
+        </div>
+      </div>
 
+      <nav class="categories" id="categories">
+        <button class="cat-btn active" data-cat="all">All Tools</button>
+        <button class="cat-btn" data-cat="ai">AI Tools</button>
+        <button class="cat-btn" data-cat="security">Security Tools</button>
+        <button class="cat-btn" data-cat="file">File Tools</button>
+        <button class="cat-btn" data-cat="generators">Generators</button>
+        <button class="cat-btn" data-cat="misc">Miscellaneous</button>
+      </nav>
 
-  <header>
-    <h1>HPkings | Bhoot Services</h1>
-    <p>Premium Tools Crafted with Precision</p>
-  </header>
+      <div class="sidebar-actions">
+        <label class="toggle">
+          <input type="checkbox" id="theme-toggle">
+          <span class="slider"></span>
+          <span class="label">Dark</span>
+        </label>
 
-  <section class="card-wrapper">
-    <!-- TOOL CARDS -->
-    <div class="tool-card" data-tool="Bhoot AI">
-      <div class="symbol">🤖</div>
-      <h2>Bhoot AI</h2>
-      <p>Smart AI assistant with natural interaction and intelligent task execution.</p>
-      <button class="launch-btn">Launch 🚀</button>
-    </div>
+        <button id="order-btn" class="order-btn">Order a Tool</button>
+      </div>
 
-    <div class="tool-card" data-tool="Ghost Crypt">
-      <div class="symbol">🧿</div>
-      <h2>Ghost Crypt </h2>
-      <p>Encrypt messages using custom keys — only the holder can decrypt.</p>
-      <button class="launch-btn">Launch 🚀</button>
-    </div>
+      <div class="contact">
+        <a href="mailto:aibhoot777@gmail.com">aibhoot777@gmail.com</a>
+        <div class="socials">
+          <a href="https://github.com/Hpkings777" target="_blank" rel="noopener">GitHub</a>
+          <a href="https://instagram.com/" target="_blank" rel="noopener">Instagram</a>
+        </div>
+      </div>
 
-    <div class="tool-card" data-tool="Fake ID Generator">
-      <div class="symbol">👤</div>
-      <h2>Fake ID Generator</h2>
-      <p>Generate realistic fake profiles for testing — name, email, address & more.</p>
-      <button class="launch-btn">Launch 🚀</button>
-    </div>
+      <footer class="sidebar-foot">
+        <small>© 2025 Bhoot Services</small>
+      </footer>
+    </aside>
 
-    <div class="tool-card" data-tool="File Engineer">
-      <div class="symbol">🛠️</div>
-      <h2>File Engineer</h2>
-      <p>Convert and manage files of all formats in one sleek unified hub.</p>
-      <button class="launch-btn">Launch 🚀</button>
-    </div>
+    <!-- MAIN -->
+    <main class="main">
+      <header class="hero">
+        <h1 class="hero-title">Bhoot Services</h1>
+        <p class="hero-sub">Premium tools crafted with precision — fast, secure, and hacker-friendly.</p>
+        <div class="hero-cta">
+          <button id="explore-btn" class="cta">Explore Tools</button>
+        </div>
+      </header>
 
-    <div class="tool-card" data-tool="Password Strength">
-      <div class="symbol">🔐</div>
-      <h2>Password Strength</h2>
-      <p>Check how secure your password is against brute-force cracking.</p>
-      <button class="launch-btn">Launch 🚀</button>
-    </div>
+      <section class="tools-section" id="tools-section">
+        <div class="tools-grid" id="tools-grid">
 
-    <div class="tool-card" data-tool="QR Code Generator">
-      <div class="symbol">📸</div>
-      <h2>QR Code Generator</h2>
-      <p>Generate custom QR codes for links, Wi-Fi, text and more.</p>
-      <button class="launch-btn">Launch 🚀</button>
-    </div>
+          <!-- Example tool card (add data-category and data-badge if needed) -->
+          <article class="tool-card" data-category="ai" data-tool="Bhoot AI" data-badge="Beta">
+            <div class="card-head">
+              <div class="symbol">🤖</div>
+              <div class="badge">Beta</div>
+            </div>
+            <h3 class="tool-title">Bhoot AI</h3>
+            <p class="tool-desc">Smart AI assistant with natural interaction and intelligent task execution.</p>
+            <div class="card-actions">
+              <button class="launch-btn">Launch 🚀</button>
+              <button class="info-btn">Info</button>
+            </div>
+          </article>
 
-    <div class="tool-card" data-tool="Base64 Tool">
-   
-  <div class="symbol">📦</div>
-  <h2>Base64 v7.5 </h2>
-  <p>Fast and secure encoding & decoding using Base64 format.</p>
-  <p>Updates:</p>
-  <ul>
-    <li>Image convertions</li>
-    <li>Enhanced processing power</li>
-    <li>Added support for large data</li>
-    <li>Fixed Image convertion crashes (recommend to use built-in copy paste)</li>
-    <li>Stability & bug fixes</li>
-  </ul>
-  <button class="launch-btn">Launch 🚀</button>
-</div>
+          <article class="tool-card" data-category="security" data-tool="Ghost Crypt" data-badge="New">
+            <div class="card-head">
+              <div class="symbol">🧿</div>
+              <div class="badge">New</div>
+            </div>
+            <h3 class="tool-title">Ghost Crypt</h3>
+            <p class="tool-desc">Encrypt messages using custom keys — only the holder can decrypt.</p>
+            <div class="card-actions">
+              <button class="launch-btn">Launch 🚀</button>
+              <button class="info-btn">Info</button>
+            </div>
+          </article>
 
+          <article class="tool-card" data-category="generators" data-tool="Fake ID Generator">
+            <div class="card-head"><div class="symbol">👤</div></div>
+            <h3 class="tool-title">Fake ID Generator</h3>
+            <p class="tool-desc">Generate realistic fake profiles for testing — name, email, address &amp; more.</p>
+            <div class="card-actions">
+              <button class="launch-btn">Launch 🚀</button>
+              <button class="info-btn">Info</button>
+            </div>
+          </article>
 
-  <!---TEMPLATES--->
-    <div class="tool-card" data-tool="tool-id1">
-      <div class="symbol">📦</div>
-      <h2>Tool_Name</h2>
-      <p>New Content coming...</p>
-      <button class="launch-btn">Launch 🚀</button>
-    </div>
+          <article class="tool-card" data-category="file" data-tool="File Engineer">
+            <div class="card-head"><div class="symbol">🛠️</div></div>
+            <h3 class="tool-title">File Engineer</h3>
+            <p class="tool-desc">Convert and manage files of all formats in one sleek unified hub.</p>
+            <div class="card-actions">
+              <button class="launch-btn">Launch 🚀</button>
+              <button class="info-btn">Info</button>
+            </div>
+          </article>
 
-    <div class="tool-card" data-tool="tool-id2">
-      <div class="symbol">📦</div>
-      <h2>Tool_Name</h2>
-      <p>New Content coming...</p>
-      <button class="launch-btn">Launch 🚀</button>
-    </div>
-    
+          <article class="tool-card" data-category="security" data-tool="Password Strength">
+            <div class="card-head"><div class="symbol">🔐</div></div>
+            <h3 class="tool-title">Password Strength</h3>
+            <p class="tool-desc">Check how secure your password is against brute-force cracking.</p>
+            <div class="card-actions">
+              <button class="launch-btn">Launch 🚀</button>
+              <button class="info-btn">Info</button>
+            </div>
+          </article>
 
-  </section>
+          <article class="tool-card" data-category="generators" data-tool="QR Code Generator">
+            <div class="card-head"><div class="symbol">📸</div></div>
+            <h3 class="tool-title">QR Code Generator</h3>
+            <p class="tool-desc">Generate custom QR codes for links, Wi‑Fi, text and more.</p>
+            <div class="card-actions">
+              <button class="launch-btn">Launch 🚀</button>
+              <button class="info-btn">Info</button>
+            </div>
+          </article>
 
-  <!-- Loader with CSS Animation -->
+          <article class="tool-card" data-category="file" data-tool="Base64 Tool">
+            <div class="card-head"><div class="symbol">📦</div></div>
+            <h3 class="tool-title">Base64 Tool</h3>
+            <p class="tool-desc">Fast and secure encoding &amp; decoding using Base64 format.</p>
+            <div class="card-actions">
+              <button class="launch-btn">Launch 🚀</button>
+              <button class="info-btn">Info</button>
+            </div>
+          </article>
+
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <!-- Loader overlay -->
   <div class="loader-overlay" id="loader">
     <div class="jarvis-circle">
       <div class="ring"></div>
-      <div class="typing-text" id="type-text"></div>
+      <div class="typing-text" id="type-text">Initializing...</div>
     </div>
   </div>
 
-  <!-- Online Launch Sound -->
   <audio id="launch-sound" src="https://cdn.pixabay.com/audio/2023/06/21/audio_b1299b4ad8.mp3" preload="auto"></audio>
 
-  <script src="js/main.js" defer ></script>
+  <script src="js/main.js" defer></script>
 </body>
 </html>
