@@ -1,6 +1,6 @@
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap');
 
-/* --- NEW LAYOUT STYLES --- */
+/* --- NEW LAYOUT & SIDEBAR STYLES --- */
 body {
     margin: 0;
     padding: 0;
@@ -22,13 +22,95 @@ body {
     height: 100%;
     width: 280px;
     box-shadow: 2px 0 10px rgba(0, 0, 0, 0.2);
-    overflow-y: auto; /* Enable scrolling for the sidebar */
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+}
+
+.sidebar-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 2rem;
+}
+
+.sidebar-header .logo {
+    background: #00e676;
+    color: #111;
+    font-size: 1.5rem;
+    font-weight: bold;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+}
+
+.site-name {
+    font-size: 1.4rem;
+    color: #fff;
+    margin: 0;
+}
+
+.sidebar-section {
+    margin-bottom: 2rem;
+}
+
+.section-title {
+    color: #aaa;
+    font-size: 0.9rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 1rem;
+}
+
+.category-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.category-list-item {
+    padding: 10px 15px;
+    cursor: pointer;
+    border-radius: 8px;
+    transition: background 0.2s ease;
+    color: #ccc;
+    font-weight: 400;
+}
+
+.category-list-item:hover, .category-list-item.active {
+    background: #2a2a2a;
+    color: #00e676;
+}
+
+.sidebar-footer {
+    margin-top: auto; /* Pushes the footer to the bottom */
+    text-align: center;
+}
+
+.order-btn {
+    display: block;
+    width: 100%;
+    background: #00e676;
+    color: #111;
+    border: none;
+    padding: 12px 18px;
+    font-weight: bold;
+    border-radius: 8px;
+    cursor: pointer;
+    text-decoration: none;
+    transition: 0.2s ease;
+}
+
+.order-btn:hover {
+    background: #00ff88;
 }
 
 .main-content {
-    grid-column: 2; /* Place main content in the second grid column */
-    padding-left: 1rem;
-    padding-right: 1rem;
+    grid-column: 2;
+    padding: 2rem; /* Added padding for better spacing */
 }
 
 header {
@@ -48,7 +130,7 @@ header p {
     margin-top: 0.3rem;
 }
 
-/* --- END NEW LAYOUT STYLES --- */
+/* --- END NEW LAYOUT & SIDEBAR STYLES --- */
 
 /* --- ORIGINAL STYLES --- */
 .card-wrapper {
