@@ -30,6 +30,7 @@ body {
     overflow-y: auto;
     display: flex;
     flex-direction: column;
+    justify-content: space-between;
     z-index: 100;
     transition: transform 0.3s ease-in-out;
 }
@@ -93,7 +94,6 @@ body {
 }
 
 .sidebar-footer {
-    margin-top: auto;
     text-align: center;
 }
 
@@ -138,7 +138,7 @@ header p {
 }
 
 .sidebar-toggle {
-    display: none; /* Hidden on desktop */
+    display: none;
     position: fixed;
     top: 1rem;
     left: 1rem;
@@ -175,13 +175,13 @@ header p {
         padding-right: 1rem;
     }
     .sidebar-toggle {
-        display: block; /* Shown on mobile */
+        display: block;
     }
 }
 /* --- END NEW LAYOUT & SIDEBAR STYLES --- */
 
 
-/* --- ORIGINAL STYLES (REMAINS THE SAME) --- */
+/* --- ORIGINAL STYLES --- */
 .card-wrapper {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(270px, 1fr));
@@ -241,7 +241,7 @@ header p {
 
 /* Loader Overlay */
 .loader-overlay {
-    position: fixed; /* This is the key change */
+    position: fixed;
     top: 0;
     left: 0;
     height: 100vh;
