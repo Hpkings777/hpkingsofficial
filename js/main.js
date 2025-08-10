@@ -1,48 +1,64 @@
-const toolLinks = {
-// 🔗 External tools
-"Bhoot AI": null, // or leave empty if under dev
-"Ghost Crypt": "https://bhootservices-ghostcrypt.netlify.app",
+const cardWrapper = document.querySelector('.card-wrapper');
+const loader = document.getElementById("loader");
+const audio = document.getElementById("launch-sound");
+const typeText = document.getElementById("type-text");
 
-// 📁 Internal tools
-"File Engineer": "file-engineer/index.html",
-"Password Strength": "password-strength/index.html",
-"Fake ID Generator": "fake-id/index.html",
-"QR Code Generator": "qr-generator/index.html",
-"Base64 Tool": "base64-tool/index.html"
-};
+// Function to render all tool cards from the toolsData array
+function renderToolCards(data) {
+  cardWrapper.innerHTML = ''; // Clear existing cards
+  data.forEach(tool => {
+    const badgesHtml = tool.badges ? tool.badges.map(badge => `<span class="badge">${badge}</span>`).join('') : '';
+    const cardHtml = `
+      <div class="tool-card" data-tool="${tool.name}">
+        <div class="symbol">${tool.symbol}</div>
+        <h2>${tool.name} ${badgesHtml}</h2>
+        <p>${tool.description}</p>
+        <button class="launch-btn">Launch 🚀</button>
+      </div>
+    `;
+    cardWrapper.insertAdjacentHTML('beforeend', cardHtml);
+  });
+}
 
-document.querySelectorAll('.launch-btn').forEach(btn => {
-btn.addEventListener('click', () => {
-const toolName = btn.parentElement.getAttribute('data-tool');
-const url = toolLinks[toolName];
+// Initial render of all tool cards
+renderToolCards(toolsData);
 
-const loader = document.getElementById("loader");  
-const audio = document.getElementById("launch-sound");  
-const typeText = document.getElementById("type-text");  
+// Function to handle the click event on a launch button
+function handleLaunchClick(e) {
+  const btn = e.target;
+  const toolName = btn.parentElement.getAttribute('data-tool');
+  const tool = toolsData.find(t => t.name === toolName);
 
-// Show loader UI  
-typeText.textContent = "Initializing Tool Interface...";  
-loader.classList.add("show");  
-audio.currentTime = 0;  
-audio.play();  
+  if (!tool) {
+    alert("⚠️ An unknown error occurred. Tool data not found.");
+    return;
+  }
 
-// Delay before action  
-setTimeout(() => {  
-  if (!url) {  
-    loader.classList.remove("show");  
+  // Show loader UI
+  typeText.textContent = `Launching ${tool.name}...`;
+  loader.classList.add("show");
+  audio.currentTime = 0;
+  audio.play();
 
-    if (["Bhoot AI", "Ghost Crypt"].includes(toolName)) {  
-      alert("❌ This tool isn't available for you yet. Please try contacting the developer.");  
-    } else {  
-      alert("⚠️ Some unknown error occurred. Try checking your network connection.");  
-    }  
-    return;  
-  }  
+  // Delay before action
+  setTimeout(() => {
+    loader.classList.remove("show");
+    const url = tool.url;
 
-  // Redirect  
-  window.location.href = url;  
-}, 5000);
+    if (url) {
+      // Redirect
+      window.location.href = url;
+    } else {
+      // Handle unavailable tools
+      alert(`❌ This tool isn't available yet. Please try contacting the developer.`);
+    }
+  }, 5000);
+}
 
+// Attach event listeners to all dynamically created launch buttons
+// We use event delegation on the cardWrapper to handle clicks efficiently
+cardWrapper.addEventListener('click', (e) => {
+  if (e.target.classList.contains('launch-btn')) {
+    handleLaunchClick(e);
+  }
 });
-});
-
