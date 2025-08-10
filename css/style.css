@@ -11,7 +11,8 @@ body {
     background-color: #111;
     color: #fff;
     font-family: 'Poppins', sans-serif;
-    position: relative; /* Needed for full-screen loader */
+    position: relative;
+    overflow: hidden;
 }
 
 .page-container {
@@ -95,6 +96,7 @@ body {
 
 .sidebar-footer {
     text-align: center;
+    margin-top: auto; /* Ensures it's pushed to the bottom */
 }
 
 .order-btn {
@@ -117,6 +119,11 @@ body {
 
 .main-content {
     grid-column: 2;
+    padding: 0;
+    overflow-y: auto;
+}
+
+.scrolling-content {
     padding: 2rem;
 }
 
