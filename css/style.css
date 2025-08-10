@@ -12,7 +12,7 @@ body {
     color: #fff;
     font-family: 'Poppins', sans-serif;
     position: relative;
-    overflow: hidden;
+    overflow: hidden; /* NEW: Prevents body from scrolling */
 }
 
 .page-container {
@@ -96,7 +96,6 @@ body {
 
 .sidebar-footer {
     text-align: center;
-    margin-top: auto; /* Ensures it's pushed to the bottom */
 }
 
 .order-btn {
@@ -119,10 +118,11 @@ body {
 
 .main-content {
     grid-column: 2;
-    padding: 0;
-    overflow-y: auto;
+    padding: 0; /* Changed to 0 to prevent double scrollbars */
+    overflow-y: auto; /* NEW: Allows main content to scroll */
 }
 
+/* NEW: Style for the scrollable area */
 .scrolling-content {
     padding: 2rem;
 }
