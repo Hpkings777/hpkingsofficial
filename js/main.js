@@ -1,12 +1,14 @@
 const cardWrapper = document.querySelector('.card-wrapper');
 const categoryList = document.querySelector('.category-list');
+const sidebarToggleBtn = document.querySelector('.sidebar-toggle');
+const sidebar = document.querySelector('.sidebar');
 const loader = document.getElementById("loader");
 const audio = document.getElementById("launch-sound");
 const typeText = document.getElementById("type-text");
 
 // Function to render all tool cards from the toolsData array
 function renderToolCards(data) {
-  cardWrapper.innerHTML = ''; // Clear existing cards
+  cardWrapper.innerHTML = '';
   data.forEach(tool => {
     const badgesHtml = tool.badges ? tool.badges.map(badge => `<span class="badge">${badge}</span>`).join('') : '';
     const cardHtml = `
@@ -50,34 +52,28 @@ function handleLaunchClick(e) {
     return;
   }
 
-  // Show loader UI with dynamic text
   typeText.textContent = `Launching ${tool.name}...`;
   loader.classList.add("show");
   audio.currentTime = 0;
   audio.play();
 
-  // Delay before action
   setTimeout(() => {
     loader.classList.remove("show");
     const url = tool.url;
 
     if (url) {
-      // Redirect
       window.location.href = url;
     } else {
-      // Handle unavailable tools
       alert(`❌ This tool isn't available yet. Please try contacting the developer.`);
     }
   }, 5000);
 }
 
-// --- NEW FUNCTIONALITY ---
 // Function to handle category filtering
 function handleCategoryFilter(e) {
   const clickedTab = e.target.closest('.category-list-item');
   if (!clickedTab) return;
 
-  // Update active state for tabs
   document.querySelectorAll('.category-list-item').forEach(tab => {
     tab.classList.remove('active');
   });
@@ -93,6 +89,11 @@ function handleCategoryFilter(e) {
   renderToolCards(filteredTools);
 }
 
+// Function to toggle sidebar visibility on mobile
+function toggleSidebar() {
+  sidebar.classList.toggle('show');
+}
+
 // Initial setup
 renderToolCards(toolsData);
 renderCategoryTabs();
@@ -105,3 +106,5 @@ cardWrapper.addEventListener('click', (e) => {
 });
 
 categoryList.addEventListener('click', handleCategoryFilter);
+
+sidebarToggleBtn.addEventListener('click', toggleSidebar);
