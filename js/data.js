@@ -1,11 +1,10 @@
-// new js/data.js
 const toolsData = [
   {
     name: "Bhoot AI",
     category: "AI Tools",
     symbol: "🤖",
     description: "Smart AI assistant with natural interaction and intelligent task execution.",
-    url: null, // This tool is currently not available
+    url: null,
     badges: ["New"]
   },
   {
@@ -51,7 +50,6 @@ const toolsData = [
     url: "base64-tool/index.html",
     badges: ["Updated"]
   },
-  // Placeholders for future tools
   {
     name: "Tool_Name",
     category: "Miscellaneous",
