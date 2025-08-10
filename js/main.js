@@ -1,4 +1,5 @@
 const cardWrapper = document.querySelector('.card-wrapper');
+const categoryList = document.querySelector('.category-list');
 const loader = document.getElementById("loader");
 const audio = document.getElementById("launch-sound");
 const typeText = document.getElementById("type-text");
@@ -20,8 +21,23 @@ function renderToolCards(data) {
   });
 }
 
-// Initial render of all tool cards
-renderToolCards(toolsData);
+// Function to dynamically generate category tabs
+function renderCategoryTabs() {
+  const categories = [...new Set(toolsData.map(tool => tool.category))];
+  const allToolsTab = document.createElement('li');
+  allToolsTab.textContent = 'All Tools';
+  allToolsTab.classList.add('category-list-item', 'active');
+  allToolsTab.dataset.category = 'All Tools';
+  categoryList.appendChild(allToolsTab);
+
+  categories.forEach(category => {
+    const li = document.createElement('li');
+    li.textContent = category;
+    li.classList.add('category-list-item');
+    li.dataset.category = category;
+    categoryList.appendChild(li);
+  });
+}
 
 // Function to handle the click event on a launch button
 function handleLaunchClick(e) {
@@ -34,7 +50,7 @@ function handleLaunchClick(e) {
     return;
   }
 
-  // Show loader UI
+  // Show loader UI with dynamic text
   typeText.textContent = `Launching ${tool.name}...`;
   loader.classList.add("show");
   audio.currentTime = 0;
@@ -55,10 +71,37 @@ function handleLaunchClick(e) {
   }, 5000);
 }
 
-// Attach event listeners to all dynamically created launch buttons
-// We use event delegation on the cardWrapper to handle clicks efficiently
+// --- NEW FUNCTIONALITY ---
+// Function to handle category filtering
+function handleCategoryFilter(e) {
+  const clickedTab = e.target.closest('.category-list-item');
+  if (!clickedTab) return;
+
+  // Update active state for tabs
+  document.querySelectorAll('.category-list-item').forEach(tab => {
+    tab.classList.remove('active');
+  });
+  clickedTab.classList.add('active');
+
+  const category = clickedTab.dataset.category;
+  let filteredTools = toolsData;
+
+  if (category !== 'All Tools') {
+    filteredTools = toolsData.filter(tool => tool.category === category);
+  }
+
+  renderToolCards(filteredTools);
+}
+
+// Initial setup
+renderToolCards(toolsData);
+renderCategoryTabs();
+
+// Attach event listeners
 cardWrapper.addEventListener('click', (e) => {
   if (e.target.classList.contains('launch-btn')) {
     handleLaunchClick(e);
   }
 });
+
+categoryList.addEventListener('click', handleCategoryFilter);
