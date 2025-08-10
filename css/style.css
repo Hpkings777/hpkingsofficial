@@ -1,5 +1,9 @@
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap');
 
+:root {
+  --sidebar-width: 280px;
+}
+
 /* --- NEW LAYOUT & SIDEBAR STYLES --- */
 body {
     margin: 0;
@@ -7,11 +11,12 @@ body {
     background-color: #111;
     color: #fff;
     font-family: 'Poppins', sans-serif;
+    position: relative; /* Needed for full-screen loader */
 }
 
 .page-container {
     display: grid;
-    grid-template-columns: 280px 1fr; /* Sidebar width and main content area */
+    grid-template-columns: var(--sidebar-width) 1fr;
     min-height: 100vh;
 }
 
@@ -20,11 +25,13 @@ body {
     padding: 2rem 1rem;
     position: fixed;
     height: 100%;
-    width: 280px;
+    width: var(--sidebar-width);
     box-shadow: 2px 0 10px rgba(0, 0, 0, 0.2);
     overflow-y: auto;
     display: flex;
     flex-direction: column;
+    z-index: 100;
+    transition: transform 0.3s ease-in-out;
 }
 
 .sidebar-header {
@@ -86,7 +93,7 @@ body {
 }
 
 .sidebar-footer {
-    margin-top: auto; /* Pushes the footer to the bottom */
+    margin-top: auto;
     text-align: center;
 }
 
@@ -110,7 +117,7 @@ body {
 
 .main-content {
     grid-column: 2;
-    padding: 2rem; /* Added padding for better spacing */
+    padding: 2rem;
 }
 
 header {
@@ -130,9 +137,51 @@ header p {
     margin-top: 0.3rem;
 }
 
+.sidebar-toggle {
+    display: none; /* Hidden on desktop */
+    position: fixed;
+    top: 1rem;
+    left: 1rem;
+    z-index: 101;
+    background: #1a1a1a;
+    border: none;
+    padding: 10px;
+    border-radius: 8px;
+    cursor: pointer;
+}
+
+.sidebar-toggle .bar {
+    width: 25px;
+    height: 3px;
+    background: #00e676;
+    margin: 5px 0;
+    transition: all 0.3s ease;
+}
+
+/* --- RESPONSIVE MOBILE LAYOUT --- */
+@media (max-width: 768px) {
+    .page-container {
+        grid-template-columns: 1fr;
+    }
+    .sidebar {
+        transform: translateX(-100%);
+    }
+    .sidebar.show {
+        transform: translateX(0);
+    }
+    .main-content {
+        grid-column: 1;
+        padding-left: 1rem;
+        padding-right: 1rem;
+    }
+    .sidebar-toggle {
+        display: block; /* Shown on mobile */
+    }
+}
 /* --- END NEW LAYOUT & SIDEBAR STYLES --- */
 
-/* --- ORIGINAL STYLES --- */
+
+/* --- ORIGINAL STYLES (REMAINS THE SAME) --- */
 .card-wrapper {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(270px, 1fr));
@@ -192,12 +241,12 @@ header p {
 
 /* Loader Overlay */
 .loader-overlay {
-    position: fixed;
+    position: fixed; /* This is the key change */
     top: 0;
     left: 0;
     height: 100vh;
     width: 100vw;
-    background: rgba(0,0,0,0.95);
+    background: rgba(0,0,0,0.98);
     z-index: 9999;
     display: none;
     align-items: center;
