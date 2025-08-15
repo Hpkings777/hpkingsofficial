@@ -18,7 +18,7 @@ body {
 .page-container {
     display: grid;
     grid-template-columns: var(--sidebar-width) 1fr;
-    height: 100vh; /* NEW: Sets a definitive height for the grid container */
+    height: 100vh;
 }
 
 .sidebar {
@@ -119,20 +119,18 @@ body {
 
 .main-content {
     grid-column: 2;
-    overflow-y: auto; /* NEW: This is where scrolling is enabled */
-    padding: 2rem; /* NEW: Added padding directly to the scrollable area */
+    overflow-y: auto;
+    padding: 0; /* REMOVED PADDING FROM THIS ELEMENT */
 }
 
-/* We removed the .scrolling-content wrapper, so this is no longer needed */
-/* .scrolling-content {
+/* NEW: This wrapper handles the internal padding for the main content */
+.main-content-inner {
     padding: 2rem;
-    overflow-y: auto;
-    flex: 1;
-} */
+}
 
 header {
     text-align: center;
-    padding: 0 1rem 1rem; /* Adjusted padding to work with new layout */
+    padding: 0 1rem 1rem;
 }
 
 header h1 {
@@ -196,7 +194,7 @@ header p {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(270px, 1fr));
     gap: 1.5rem;
-    padding: 2rem;
+    padding: 0; /* REMOVED PADDING FROM THIS ELEMENT */
 }
 
 .tool-card {
