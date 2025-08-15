@@ -11,7 +11,7 @@ const orderModal = document.getElementById('order-modal');
 const closeBtn = orderModal.querySelector('.close-btn');
 const orderForm = document.getElementById('order-form');
 const mainContent = document.querySelector('.main-content');
-const sidebarCloseBtn = document.querySelector('.sidebar-close-btn'); // NEW: Select the new close button
+const sidebarCloseBtn = document.querySelector('.sidebar-close-btn');
 
 const BOT_TOKEN = '<YOUR_BOT_TOKEN>';
 const CHAT_ID = '<YOUR_CHAT_ID>';
@@ -116,9 +116,9 @@ async function handleOrderFormSubmit(e) {
     Details: ${details || 'N/A'}
   `;
 
-  const url = `https://api.telegram.org/bot${7511214595:AAFBqnI6fbx-7i5Htu_mB3_eBHrrEuVQpds}/sendMessage`;
+  const url = `https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`;
   const data = new FormData();
-  data.append('chat_id', 6629569759);
+  data.append('chat_id', CHAT_ID);
   data.append('text', message);
   data.append('parse_mode', 'Markdown');
 
@@ -153,7 +153,6 @@ cardWrapper.addEventListener('click', (e) => {
 categoryList.addEventListener('click', handleCategoryFilter);
 sidebarToggleBtn.addEventListener('click', toggleSidebar);
 
-// NEW: Add event listener for the new sidebar close button
 sidebarCloseBtn.addEventListener('click', toggleSidebar);
 
 orderFormBtn.addEventListener('click', () => {
