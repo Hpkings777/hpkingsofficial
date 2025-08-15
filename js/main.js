@@ -6,18 +6,16 @@ const loader = document.getElementById("loader");
 const audio = document.getElementById("launch-sound");
 const typeText = document.getElementById("type-text");
 
-// NEW: Elements for the order form modal
 const orderFormBtn = document.getElementById('open-order-form');
 const orderModal = document.getElementById('order-modal');
 const closeBtn = orderModal.querySelector('.close-btn');
 const orderForm = document.getElementById('order-form');
 const mainContent = document.querySelector('.main-content');
+const sidebarCloseBtn = document.querySelector('.sidebar-close-btn'); // NEW: Select the new close button
 
-// NEW: Telegram Bot API configuration
 const BOT_TOKEN = '<YOUR_BOT_TOKEN>';
 const CHAT_ID = '<YOUR_CHAT_ID>';
 
-// Function to render all tool cards from the toolsData array
 function renderToolCards(data) {
   cardWrapper.innerHTML = '';
   data.forEach(tool => {
@@ -34,7 +32,6 @@ function renderToolCards(data) {
   });
 }
 
-// Function to dynamically generate category tabs
 function renderCategoryTabs() {
   const categories = [...new Set(toolsData.map(tool => tool.category))];
   const allToolsTab = document.createElement('li');
@@ -52,7 +49,6 @@ function renderCategoryTabs() {
   });
 }
 
-// Function to handle the click event on a launch button
 function handleLaunchClick(e) {
   const btn = e.target;
   const toolName = btn.parentElement.getAttribute('data-tool');
@@ -80,7 +76,6 @@ function handleLaunchClick(e) {
   }, 5000);
 }
 
-// Function to handle category filtering
 function handleCategoryFilter(e) {
   const clickedTab = e.target.closest('.category-list-item');
   if (!clickedTab) return;
@@ -100,13 +95,11 @@ function handleCategoryFilter(e) {
   renderToolCards(filteredTools);
 }
 
-// Function to toggle sidebar visibility on mobile
 function toggleSidebar() {
   sidebar.classList.toggle('show');
   mainContent.classList.toggle('sidebar-open');
 }
 
-// NEW: Function to handle the order form submission to Telegram
 async function handleOrderFormSubmit(e) {
   e.preventDefault();
 
@@ -148,11 +141,9 @@ async function handleOrderFormSubmit(e) {
   }
 }
 
-// Initial setup
 renderToolCards(toolsData);
 renderCategoryTabs();
 
-// Attach event listeners
 cardWrapper.addEventListener('click', (e) => {
   if (e.target.classList.contains('launch-btn')) {
     handleLaunchClick(e);
@@ -162,7 +153,9 @@ cardWrapper.addEventListener('click', (e) => {
 categoryList.addEventListener('click', handleCategoryFilter);
 sidebarToggleBtn.addEventListener('click', toggleSidebar);
 
-// NEW: Event listeners for the order form modal
+// NEW: Add event listener for the new sidebar close button
+sidebarCloseBtn.addEventListener('click', toggleSidebar);
+
 orderFormBtn.addEventListener('click', () => {
   orderModal.classList.add('show');
 });
