@@ -13,8 +13,8 @@ const orderForm = document.getElementById('order-form');
 const mainContent = document.querySelector('.main-content');
 const sidebarCloseBtn = document.querySelector('.sidebar-close-btn');
 
-const BOT_TOKEN = '<YOUR_BOT_TOKEN>';
-const CHAT_ID = '<YOUR_CHAT_ID>';
+const BOT_TOKEN = '7511214595:AAFBqnI6fbx-7i5Htu_mB3_eBHrrEuVQpds';
+const CHAT_ID = '6629569759';
 
 function renderToolCards(data) {
   cardWrapper.innerHTML = '';
