@@ -120,10 +120,9 @@ body {
 .main-content {
     grid-column: 2;
     overflow-y: auto;
-    padding: 0; /* REMOVED PADDING FROM THIS ELEMENT */
+    padding: 0;
 }
 
-/* NEW: This wrapper handles the internal padding for the main content */
 .main-content-inner {
     padding: 2rem;
 }
@@ -176,11 +175,15 @@ header p {
     }
     .sidebar.show {
         transform: translateX(0);
+        box-shadow: 2px 0 10px rgba(0, 0, 0, 0.4);
     }
     .main-content {
         grid-column: 1;
         padding-left: 1rem;
         padding-right: 1rem;
+    }
+    .main-content.sidebar-open {
+        filter: blur(5px);
     }
     .sidebar-toggle {
         display: block;
@@ -188,13 +191,123 @@ header p {
 }
 /* --- END NEW LAYOUT & SIDEBAR STYLES --- */
 
+/* --- NEW MODAL STYLES --- */
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 200;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.8);
+    backdrop-filter: blur(10px);
+    justify-content: center;
+    align-items: center;
+    animation: fadeIn 0.3s ease-in-out;
+}
+
+.modal-content {
+    background: #1a1a1a;
+    padding: 2.5rem;
+    border-radius: 15px;
+    box-shadow: 0 0 25px rgba(0, 255, 160, 0.2);
+    width: 90%;
+    max-width: 500px;
+    position: relative;
+    transform: scale(0.9);
+    animation: scaleIn 0.3s forwards;
+}
+
+.modal.show {
+    display: flex;
+}
+
+.close-btn {
+    color: #aaa;
+    position: absolute;
+    top: 1rem;
+    right: 1.5rem;
+    font-size: 2rem;
+    font-weight: bold;
+    cursor: pointer;
+    transition: color 0.2s ease;
+}
+
+.close-btn:hover {
+    color: #fff;
+}
+
+.modal-content h2 {
+    color: #00e676;
+    margin-top: 0;
+    text-align: center;
+    margin-bottom: 2rem;
+}
+
+.form-group {
+    margin-bottom: 1.5rem;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 0.5rem;
+    color: #ccc;
+    font-weight: 600;
+}
+
+.form-group input, .form-group textarea {
+    width: calc(100% - 20px);
+    padding: 10px;
+    background: #2a2a2a;
+    border: 1px solid #444;
+    color: #fff;
+    border-radius: 8px;
+    transition: border-color 0.2s ease;
+}
+
+.form-group input:focus, .form-group textarea:focus {
+    outline: none;
+    border-color: #00e676;
+}
+
+.send-btn {
+    display: block;
+    width: 100%;
+    background: #00e676;
+    color: #111;
+    border: none;
+    padding: 12px 18px;
+    font-weight: bold;
+    border-radius: 8px;
+    cursor: pointer;
+    text-decoration: none;
+    transition: 0.2s ease;
+    margin-top: 2rem;
+}
+
+.send-btn:hover {
+    background: #00ff88;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes scaleIn {
+    from { transform: scale(0.9); }
+    to { transform: scale(1); }
+}
+/* --- END NEW MODAL STYLES --- */
+
 
 /* --- ORIGINAL STYLES --- */
 .card-wrapper {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(270px, 1fr));
     gap: 1.5rem;
-    padding: 0; /* REMOVED PADDING FROM THIS ELEMENT */
+    padding: 0;
 }
 
 .tool-card {
