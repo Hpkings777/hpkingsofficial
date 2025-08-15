@@ -18,7 +18,7 @@ body {
 .page-container {
     display: grid;
     grid-template-columns: var(--sidebar-width) 1fr;
-    min-height: 100vh;
+    height: 100vh; /* NEW: Sets a definitive height for the grid container */
 }
 
 .sidebar {
@@ -119,21 +119,20 @@ body {
 
 .main-content {
     grid-column: 2;
-    padding: 0;
-    overflow-y: hidden; /* Prevent scrolling on this element */
-    display: flex;
-    flex-direction: column;
+    overflow-y: auto; /* NEW: This is where scrolling is enabled */
+    padding: 2rem; /* NEW: Added padding directly to the scrollable area */
 }
 
-.scrolling-content {
+/* We removed the .scrolling-content wrapper, so this is no longer needed */
+/* .scrolling-content {
     padding: 2rem;
-    overflow-y: auto; /* Correct place for independent scrolling */
-    flex: 1; /* NEW: Allows this element to grow and fill available space */
-}
+    overflow-y: auto;
+    flex: 1;
+} */
 
 header {
     text-align: center;
-    padding: 2rem 1rem 1rem;
+    padding: 0 1rem 1rem; /* Adjusted padding to work with new layout */
 }
 
 header h1 {
