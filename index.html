@@ -36,7 +36,7 @@
       </div>
 
       <div class="sidebar-footer">
-        <a href="mailto:aibhoot777@gmail.com?subject=Tool%20Order&body=Name:%20[Your%20Name]%0D%0ATool%20Name:%20[Tool%20Name]%0D%0AEmail:%20[Your%20Email]%0D%0AExtra%20Details:%20[...]" class="order-btn">Order a Tool ✉️</a>
+        <button class="order-btn" id="open-order-form">Order a Tool ✉️</button>
       </div>
     </aside>
 
@@ -57,6 +57,31 @@
           </section>
       </div>
 
+      <div class="modal" id="order-modal">
+        <div class="modal-content">
+          <span class="close-btn">&times;</span>
+          <h2>Order a Tool</h2>
+          <form id="order-form">
+            <div class="form-group">
+              <label for="name">Your Name:</label>
+              <input type="text" id="name" name="name" required>
+            </div>
+            <div class="form-group">
+              <label for="email">Your Email:</label>
+              <input type="email" id="email" name="email" required>
+            </div>
+            <div class="form-group">
+              <label for="tool-name">Tool Name:</label>
+              <input type="text" id="tool-name" name="tool-name" required>
+            </div>
+            <div class="form-group">
+              <label for="details">Extra Details:</label>
+              <textarea id="details" name="details"></textarea>
+            </div>
+            <button type="submit" class="send-btn">Send Order</button>
+          </form>
+        </div>
+      </div>
       <div class="loader-overlay" id="loader">
         <div class="jarvis-circle">
           <div class="ring"></div>
