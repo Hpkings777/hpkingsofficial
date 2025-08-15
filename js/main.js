@@ -116,9 +116,9 @@ async function handleOrderFormSubmit(e) {
     Details: ${details || 'N/A'}
   `;
 
-  const url = `https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`;
+  const url = `https://api.telegram.org/bot${7511214595:AAFBqnI6fbx-7i5Htu_mB3_eBHrrEuVQpds}/sendMessage`;
   const data = new FormData();
-  data.append('chat_id', CHAT_ID);
+  data.append('chat_id', 6629569759);
   data.append('text', message);
   data.append('parse_mode', 'Markdown');
 
