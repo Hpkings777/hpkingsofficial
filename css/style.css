@@ -28,12 +28,35 @@ body {
     height: 100%;
     width: var(--sidebar-width);
     box-shadow: 2px 0 10px rgba(0, 0, 0, 0.2);
-    overflow-y: auto;
     display: flex;
     flex-direction: column;
     justify-content: space-between;
     z-index: 100;
     transition: transform 0.3s ease-in-out;
+}
+
+/* NEW: Scrollable wrapper for sidebar content */
+.sidebar-content-wrapper {
+    overflow-y: auto;
+    flex-grow: 1; /* Allows this section to fill available space */
+}
+
+.sidebar-close-btn {
+    display: none; /* Hidden by default */
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    background: transparent;
+    border: none;
+    font-size: 2rem;
+    color: #00e676;
+    cursor: pointer;
+    z-index: 102;
+    transition: color 0.2s;
+}
+
+.sidebar-close-btn:hover {
+  color: #00ff88;
 }
 
 .sidebar-header {
@@ -97,6 +120,7 @@ body {
 .sidebar-footer {
     text-align: center;
     margin-top: auto;
+    padding-top: 1rem; /* Ensures a small gap above the button */
 }
 
 .order-btn {
@@ -176,6 +200,9 @@ header p {
     .sidebar.show {
         transform: translateX(0);
         box-shadow: 2px 0 10px rgba(0, 0, 0, 0.4);
+    }
+    .sidebar.show .sidebar-close-btn {
+      display: block; /* Show the close button when sidebar is open */
     }
     .main-content {
         grid-column: 1;
