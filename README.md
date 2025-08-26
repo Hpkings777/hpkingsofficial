@@ -1,7 +1,10 @@
 # 👻 Bhoot Services
 
 A powerful multi-tool web app with a spooky twist!  
-Get your hands on daily-use tools like **Base64 converter, Fake ID generator, Password strength checker, QR code generator**, and more — all bundled in one sleek platform. Built with 💀 love by [HPkings](https://github.com/Hpkings777).
+Get your hands on daily-use tools like **Base64 converter, Fake ID generator, Password strength checker, QR code generator**, and more — all bundled in one sleek platform. Built by [HPkings](https://github.com/Hpkings777).
+Website Links:
+[Server 1(Vercel)](https://hpkingsofficial.vercel.app)
+[Server 2(Github)](https://hpkings777.github.io/hpkingsofficial)
 
 ---
 
