@@ -1,11 +1,11 @@
 const toolsData = [
   {
-    name: "Bhoot AI",
+    name: "HP-77A AI",
     category: "AI Tools",
     symbol: "🤖",
     description: "Smart AI assistant with natural interaction and intelligent task execution.",
     url: null,
-    badges: ["New"]
+    badges: ["⭐"]
   },
   {
     name: "Ghost Crypt",
@@ -48,17 +48,17 @@ const toolsData = [
     symbol: "📦",
     description: "Fast and secure encoding & decoding using Base64 format.",
     url: "base64-tool/index.html",
-    badges: ["Updated"]
+    badges: [""]
   },
   {
-    name: "Tool_Name",
-    category: "Miscellaneous",
-    symbol: "📦",
-    description: "New Content coming...",
+    name: "Spectra 3.5",
+    category: "AI Tools",
+    symbol: "✨",
+    description: "Spectra 3.5V – AI-powered PPT builder for quick, stylish, and professional presentations.",
     url: null
   },
   {
-    name: "Tool_Name",
+    name: "Bhoot Mart",
     category: "Miscellaneous",
     symbol: "📦",
     description: "New Content coming...",
